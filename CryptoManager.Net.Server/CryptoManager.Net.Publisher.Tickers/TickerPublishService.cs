@@ -142,6 +142,7 @@ namespace CryptoManager.Net.Publisher.Tickers
                     if (!subResult)
                     {
                         await Task.WhenAll(exchangeSubs.Select(x => x.CloseAsync()));
+                        success = false;
                         break;
                     }
 
@@ -201,7 +202,7 @@ namespace CryptoManager.Net.Publisher.Tickers
             if (@event.Data.SharedSymbol == null)
                 return;
 
-            data.Add(@event.Data.Symbol, ParseTicker(@event.Exchange, @event.Data));
+            data.Add(@event.Exchange + @event.Data.Symbol, ParseTicker(@event.Exchange, @event.Data));
             _ = _tickerBatcher.AddAsync(data);
         }
 
@@ -212,9 +213,11 @@ namespace CryptoManager.Net.Publisher.Tickers
             foreach (var symbol in @event.Data)
             {
                 if (symbol.SharedSymbol == null)
+                {
                     continue;
+                }
 
-                data.Add(symbol.Symbol, ParseTicker(@event.Exchange, symbol));
+                data.Add(@event.Exchange + symbol.Symbol, ParseTicker(@event.Exchange, symbol));
             }
 
 #warning todo
@@ -241,7 +244,7 @@ namespace CryptoManager.Net.Publisher.Tickers
                     if (symbol.SharedSymbol == null)
                         continue;
 
-                    data.Add(symbol.Symbol, ParseTicker(result.Exchange, symbol));
+                    data.Add(result.Exchange + symbol.Symbol, ParseTicker(result.Exchange, symbol));
                 }
                 _ = _tickerBatcher.AddAsync(data);
             }
