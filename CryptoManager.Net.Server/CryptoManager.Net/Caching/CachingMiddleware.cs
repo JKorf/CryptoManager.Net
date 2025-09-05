@@ -40,7 +40,6 @@ namespace CryptoManager.Net.Caching
             var cached = _cache.TryGet<string>(key);
             if (cached != null)
             {
-                _logger.LogWarning("Cache response for " + key);
                 context.Response.ContentType = "application/json;";
                 await context.Response.WriteAsync(cached);
                 return;
