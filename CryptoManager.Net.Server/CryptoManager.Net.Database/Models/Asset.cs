@@ -3,15 +3,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace CryptoManager.Net.Database.Models
 {
-    [Index(nameof(Exchange), nameof(Asset))]
-    [Index(nameof(Asset), nameof(AssetType))]
-    public class AssetStats
+    public class Asset
     {
         [Key]
         public string Id { get; set; } = string.Empty;
-        public string Asset { get; set; } = string.Empty;
         public AssetType AssetType { get; set; }
-        public string Exchange { get; set; } = string.Empty;
 
         [Precision(28, 8)]
         public decimal? Value { get; set; }

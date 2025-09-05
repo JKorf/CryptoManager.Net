@@ -17,7 +17,6 @@ namespace CryptoManager.Net.UI.Services.Rest
             Func<Page<ApiAsset>, Task> onSuccess,
             Func<ApiError, Task>? onError, 
             string? query = null, 
-            string? exchange = null, 
             string? sort = null, 
             string? sortDirection = null,
             AssetType? assetType = null,
@@ -28,8 +27,6 @@ namespace CryptoManager.Net.UI.Services.Rest
             var parameters = new Dictionary<string, string>();
             if (!string.IsNullOrEmpty(query))
                 parameters.Add("query", query);
-            if (!string.IsNullOrEmpty(exchange))
-                parameters.Add("exchange", exchange);
             if (!string.IsNullOrEmpty(sort))
                 parameters.Add("orderBy", sort);
             if (!string.IsNullOrEmpty(sortDirection))

@@ -6,6 +6,7 @@ using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using NetTopologySuite.Index.HPRtree;
 
 namespace CryptoManager.Net.Processor.Symbols
 {
@@ -17,16 +18,19 @@ namespace CryptoManager.Net.Processor.Symbols
         private string[] _fiatAssets;
         private string[] _leveragedTokens;
         private readonly IProcessInput<Symbol> _processInput;
+        private readonly IPublishOutput<PendingAssetCalculation> _assetCalcOutput;
         private readonly IDbContextFactory<TrackerContext> _dbContextFactory;
 
         public SymbolsProcessService(
             IConfiguration configuration,
             ILogger<SymbolsProcessService> logger,
-            IProcessInput<Symbol> publishOutput,
+            IProcessInput<Symbol> processInput,
+            IPublishOutput<PendingAssetCalculation> assetCalcOutput,
             IDbContextFactory<TrackerContext> dbContextFactory)
         {
             _logger = logger;
-            _processInput = publishOutput;
+            _processInput = processInput;
+            _assetCalcOutput = assetCalcOutput;
             _dbContextFactory = dbContextFactory;
 
             _usdStableAssets = configuration.GetValue<string>("UsdStableAssets")!.Split(";");
@@ -54,7 +58,7 @@ namespace CryptoManager.Net.Processor.Symbols
             var context = _dbContextFactory.CreateDbContext();
 
             // Get the names of all symbols for the exchange currently in the DB so we know which ones are no longer returned
-            var exchangeSymbols = await context.Symbols.Where(x => x.Exchange == update.Exchange).Select(x => x.Id).ToHashSetAsync();
+            var exchangeSymbols = await context.Symbols.Where(x => x.Exchange == update.Exchange && x.DeleteTime == null).Select(x => x.Id).ToHashSetAsync();
 
             var symbols = new List<ExchangeSymbol>();
             foreach (var item in update.Data)
@@ -139,29 +143,38 @@ namespace CryptoManager.Net.Processor.Symbols
                 _logger.LogError(ex, "Failed to process updated symbols in Symbol update");
             }
 
-            try
+            if (symbolsToRemove.Count > 0)
             {
-                await context.BulkInsertOrUpdateAsync(symbolsToRemove, new BulkConfig
+                try
                 {
-                    PropertiesToInclude = [
-                        nameof(ExchangeSymbol.Id),
-                        nameof(ExchangeSymbol.Exchange),
-                        nameof(ExchangeSymbol.LastPrice),
-                        nameof(ExchangeSymbol.HighPrice),
-                        nameof(ExchangeSymbol.LowPrice),
-                        nameof(ExchangeSymbol.Volume),
-                        nameof(ExchangeSymbol.QuoteVolume),
-                        nameof(ExchangeSymbol.ChangePercentage),
-                        nameof(ExchangeSymbol.Enabled),
-                        nameof(ExchangeSymbol.UpdateTime),
-                        nameof(ExchangeSymbol.DeleteTime)
-                    ],
-                    WithHoldlock = false
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to process removed symbols in Symbol update");
+                    await context.BulkInsertOrUpdateAsync(symbolsToRemove, new BulkConfig
+                    {
+                        PropertiesToInclude = [
+                            nameof(ExchangeSymbol.Id),
+                            nameof(ExchangeSymbol.Exchange),
+                            nameof(ExchangeSymbol.LastPrice),
+                            nameof(ExchangeSymbol.HighPrice),
+                            nameof(ExchangeSymbol.LowPrice),
+                            nameof(ExchangeSymbol.Volume),
+                            nameof(ExchangeSymbol.QuoteVolume),
+                            nameof(ExchangeSymbol.ChangePercentage),
+                            nameof(ExchangeSymbol.Enabled),
+                            nameof(ExchangeSymbol.UpdateTime),
+                            nameof(ExchangeSymbol.DeleteTime)
+                        ],
+                        WithHoldlock = false
+                    });
+
+                    // When a symbol is removed the asset stats should be recalculated
+                    await _assetCalcOutput.PublishAsync(new PublishItem<PendingAssetCalculation>
+                    {
+                        Data = symbolsToRemove.Select(x => new PendingAssetCalculation { Exchange = x.Exchange, Asset = x.Id.Split('-')[1] })
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to process removed symbols in Symbol update");
+                }
             }
         }
 

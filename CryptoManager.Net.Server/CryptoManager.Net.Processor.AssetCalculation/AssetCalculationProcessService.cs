@@ -59,7 +59,7 @@ namespace CryptoManager.Net.Processor.Tickers
                 var data = symbolData.Select(x =>
                 {
                     var first = x.First();
-                    return new AssetStats
+                    return new ExchangeAsset
                     {
                         Id = $"{first.Exchange}-{first.BaseAsset}",
                         Asset = first.BaseAsset,
@@ -78,7 +78,7 @@ namespace CryptoManager.Net.Processor.Tickers
                 if (DateTime.UtcNow - _lastLog > TimeSpan.FromMinutes(1))
                 {
                     _lastLog = DateTime.UtcNow;
-                    _logger.LogInformation($"Asset calculation done in {sw.ElapsedMilliseconds}ms for {update.Data.Count()} items");
+                    _logger.LogInformation($"Exchange asset calculation done in {sw.ElapsedMilliseconds}ms for {update.Data.Count()} items");
                 }
             }
             catch (Exception ex)

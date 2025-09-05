@@ -44,7 +44,7 @@ namespace CryptoManager.Net.Analyzers
                 var quoteSymbols = allSymbolVolumes.GroupBy(x => new { x.Exchange, x.QuoteAsset }).Select(x => $"{x.Key.Exchange}-{x.Key.QuoteAsset}").ToList();
 
                 // Get all quote asset exchanges prices we need
-                var quoteSymbolPrices = await context.AssetStats.Where(x => quoteSymbols.Contains(x.Id)).Select(x => new { x.Id, x.Value }).ToListAsync();
+                var quoteSymbolPrices = await context.ExchangeAssets.Where(x => quoteSymbols.Contains(x.Id)).Select(x => new { x.Id, x.Value }).ToListAsync();
 
                 var data = new List<ExchangeSymbol>(allSymbolVolumes.Count);
                 foreach(var symbol in allSymbolVolumes)

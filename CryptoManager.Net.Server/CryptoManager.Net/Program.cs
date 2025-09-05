@@ -1,3 +1,4 @@
+using Azure.Monitor.OpenTelemetry.AspNetCore;
 using CryptoManager.Net;
 using CryptoManager.Net.Analyzers;
 using CryptoManager.Net.Auth;
@@ -54,6 +55,7 @@ builder.Services.AddAsSingletonAndBackgroundService<FiatPricePublishService>();
 builder.Services.AddAsSingletonAndBackgroundService<AssetCalculationProcessService>();
 builder.Services.AddAsSingletonAndBackgroundService<SymbolUsdVolumeService>();
 builder.Services.AddAsSingletonAndBackgroundService<UserPortfolioSnapshotService>();
+builder.Services.AddAsSingletonAndBackgroundService<AssetStatsAnalyzerService>();
 builder.Services.AddSingleton<TickerSubscriptionService>();
 builder.Services.AddSingleton<TradeSubscriptionService>();
 builder.Services.AddSingleton<OrderBookSubscriptionService>();

@@ -17,14 +17,7 @@
 <MudTable T="ApiAsset" ServerData="ServerReload" @ref="table" OnRowClick="RowClickEvent">
     <ToolBarContent>
         <MudTextField Style="max-width: 400px;" T="string" ValueChanged="@(s=>OnSearch(s))" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
-        <MudSpacer />
-        <MudSelect  T="string" ValueChanged="@(s=>OnExchangeChange(s))" Placeholder="Exchange" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Web" IconSize="Size.Medium" Class="mt-0">
-            <MudSelectItem Value="@("All")" T="string"></MudSelectItem>
-            @foreach (var exchange in exchanges)
-            {
-                <MudSelectItem Value="@exchange" T="string">@exchange</MudSelectItem>
-            }
-        </MudSelect>
+        <MudSpacer />        
     </ToolBarContent>
     <HeaderContent>
         <MudTh>Name</MudTh>
@@ -60,7 +53,6 @@
 @code {
     private MudTable<ApiAsset>? table;
     private string? searchString = null;
-    private string? exchange = null;
     private bool _connectionIssues = false;
 
     private List<BreadcrumbItem> breadcrumbs = new List<BreadcrumbItem>
@@ -97,7 +89,6 @@
                 return Task.CompletedTask;
             },
             searchString,
-            exchange: exchange,
             sort: state.SortLabel,
             sortDirection: state.SortDirection.ToString(),
             page: state.Page + 1,
@@ -120,12 +111,6 @@
     private void OnSearch(string text)
     {
         searchString = text;
-        table?.ReloadServerData();
-    }
-
-    private void OnExchangeChange(string text)
-    {
-        exchange = text == "All" ? null : text;
         table?.ReloadServerData();
     }
 }

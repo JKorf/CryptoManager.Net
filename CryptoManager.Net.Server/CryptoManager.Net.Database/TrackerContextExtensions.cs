@@ -23,7 +23,7 @@ namespace CryptoManager.Net.Database
 				                        ),
 			                        0) AS UsdValue
 		                        FROM UserBalances ub                    
-		                        LEFT JOIN AssetStats a ON ub.Asset = a.Asset
+		                        LEFT JOIN ExchangeAssets a ON ub.Asset = a.Asset
 		                        LEFT JOIN FiatPrices f ON ub.Asset = f.Id
 		                        GROUP BY ub.UserId, ub.Total
 	                        ) userExchangeStats
@@ -46,7 +46,7 @@ namespace CryptoManager.Net.Database
 				                        ),
 			                        0) AS UsdValue
 		                        FROM UserExternalBalances ub
-		                        LEFT JOIN AssetStats a ON ub.Asset = a.Asset
+		                        LEFT JOIN ExchangeAssets a ON ub.Asset = a.Asset
 		                        LEFT JOIN FiatPrices f ON ub.Asset = f.Id
 		                        GROUP BY ub.UserId, ub.Total
 		                        ORDER BY UsdValue DESC OFFSET 0 ROWS
@@ -82,7 +82,7 @@ namespace CryptoManager.Net.Database
 	                        ),
                         0) AS UsdValue
                     FROM UserBalances ub                    
-                    LEFT JOIN AssetStats a ON ub.Asset = a.Asset
+                    LEFT JOIN ExchangeAssets a ON ub.Asset = a.Asset
                     LEFT JOIN FiatPrices f ON ub.Asset = f.Id
                     WHERE ub.UserId = {userId} AND ub.Total > 0
                     GROUP BY ub.Exchange, ub.Asset, ub.Available, ub.Total
@@ -109,7 +109,7 @@ namespace CryptoManager.Net.Database
 	                        ),
                         0) AS UsdValue
                     FROM UserBalances ub                    
-                    LEFT JOIN AssetStats a ON ub.Asset = a.Asset
+                    LEFT JOIN ExchangeAssets a ON ub.Asset = a.Asset
                     LEFT JOIN FiatPrices f ON ub.Asset = f.Id
                     WHERE ub.UserId = {userId} AND ub.Exchange = {exchange} AND ub.Total > 0
                     GROUP BY ub.Exchange, ub.Asset, ub.Available, ub.Total
@@ -139,7 +139,7 @@ namespace CryptoManager.Net.Database
 	                    ),
                     0) AS UsdValue
                 FROM UserExternalBalances ub
-                LEFT JOIN AssetStats a ON ub.Asset = a.Asset
+                LEFT JOIN ExchangeAssets a ON ub.Asset = a.Asset
                 LEFT JOIN FiatPrices f ON ub.Asset = f.Id
                 WHERE ub.UserId = {userId}
                 GROUP BY ub.Id, ub.Asset, ub.Total
@@ -172,7 +172,7 @@ namespace CryptoManager.Net.Database
 			                ),
 		                0) AS UsdValue
 	                FROM UserBalances ub                    
-	                LEFT JOIN AssetStats a ON ub.Asset = a.Asset
+	                LEFT JOIN ExchangeAssets a ON ub.Asset = a.Asset
 	                LEFT JOIN FiatPrices f ON ub.Asset = f.Id
 	                WHERE ub.UserId = {userId} AND ub.Total > 0
 	                GROUP BY ub.Exchange, ub.Asset, ub.Available, ub.Total
