@@ -1,4 +1,15 @@
-# @name exchanges
+
+# @name login
+POST {{HostAddress}}/users/login
+Accept: application/json
+Content-Type: application/json
+
+{
+    "email": "user1@test.com",
+    "password": "password"
+}
+
+###
 
 GET {{HostAddress}}/exchanges
 Accept: application/json
@@ -20,5 +31,13 @@ Accept: application/json
 
 GET {{HostAddress}}/exchanges/{{exchange}}
 Accept: application/json
+
+###
+
+@exchange=Bybit
+
+GET {{HostAddress}}/exchanges/{{exchange}}/fees?symbol=Bybit-ETH-USDT
+Accept: application/json
+Authorization: Bearer {{login.response.body.$.data.jwt}}
 
 ###

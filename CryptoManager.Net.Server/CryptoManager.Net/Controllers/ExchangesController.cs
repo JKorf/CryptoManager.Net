@@ -1,6 +1,10 @@
 using CryptoClients.Net;
 using CryptoClients.Net.Enums;
+using CryptoClients.Net.Interfaces;
+using CryptoClients.Net.Models;
+using CryptoExchange.Net.Authentication;
 using CryptoExchange.Net.Objects.Errors;
+using CryptoExchange.Net.SharedApis;
 using CryptoManager.Net.Caching;
 using CryptoManager.Net.Database;
 using CryptoManager.Net.Database.Models;
@@ -15,22 +19,28 @@ namespace CryptoManager.Net.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-[AllowAnonymous]
 [ResponseCache(Duration = 10, VaryByQueryKeys = ["*"])]
 public class ExchangesController : ApiController
 {
     private readonly ILogger _logger;
+    private readonly IExchangeUserClientProvider _clientProvider;
     private readonly string[]? _enabledExchanges;
 
-    public ExchangesController(ILogger<ExchangesController> logger, IConfiguration configuration, TrackerContext dbContext) : base(dbContext)
+    public ExchangesController(
+        ILogger<ExchangesController> logger, 
+        IConfiguration configuration,
+        IExchangeUserClientProvider clientProvider,
+        TrackerContext dbContext) : base(dbContext)
     {
         _logger = logger;
+        _clientProvider = clientProvider;
         _enabledExchanges = configuration.GetValue<string?>("EnabledExchanges")?.Split(";");
     }
 
     [HttpGet("names")]
     [ResponseCache(Duration = 600)]
     [ServerCache(Duration = 600)]
+    [AllowAnonymous]
     public ApiResult<string[]> GetExchangeNamesAsync()
     {
         return ApiResult<string[]>.Ok(_enabledExchanges ?? Exchange.All);
@@ -39,6 +49,7 @@ public class ExchangesController : ApiController
     [HttpGet("{exchange}/environments")]
     [ResponseCache(Duration = 600, VaryByQueryKeys = ["*"])]
     [ServerCache(Duration = 600)]
+    [AllowAnonymous]
     public ApiResult<string[]> GetExchangeEnvironmentsAsync(string exchange)
     {
         var exchangeInfo = Exchanges.All.Single(x => x.Name == exchange);
@@ -48,6 +59,7 @@ public class ExchangesController : ApiController
 
     [HttpGet]
     [ServerCache(Duration = 10)]
+    [AllowAnonymous]
     public async Task<ApiResultPaged<IEnumerable<ApiExchange>>> GetExchangesAsync(
         string? query = null,
         string? orderBy = null,
@@ -96,6 +108,7 @@ public class ExchangesController : ApiController
 
     [HttpGet("{exchange}")]
     [ServerCache(Duration = 10)]
+    [AllowAnonymous]
     public async Task<ApiResult<ApiExchangeDetails>> GetExchangeDetailsAsync(string exchange)
     {
         IQueryable<IGrouping<string, ExchangeSymbol>> dbQuery = _dbContext.Symbols.Where(x => x.Exchange == exchange).GroupBy(x => x.Exchange);
@@ -118,6 +131,35 @@ public class ExchangesController : ApiController
             LogoUrl = exchangeInfo.ImageUrl,
             Type = exchangeInfo.Type,
             Url = exchangeInfo.Url
+        });
+    }
+
+    [HttpGet("{exchange}/fees")]
+    [ServerCache(Duration = 60)]
+    public async Task<ApiResult<ApiExchangeFees>> GetExchangeFeesAsync(string symbolId, string exchange)
+    {
+        var apiKeys = await _dbContext.UserApiKeys.Where(x => x.UserId == UserId && !x.Invalid && exchange == null ? true : x.Exchange == exchange).ToListAsync();
+        if (!string.IsNullOrEmpty(exchange) && !apiKeys.Any())
+            return ApiResult<ApiExchangeFees>.Error(ApiErrors.NoApiKeyConfigured);
+
+        var environments = apiKeys.ToDictionary(x => x.Exchange, x => (string?)x.Environment);
+        var credentials = apiKeys.ToDictionary(x => x.Exchange, x => new ApiCredentials(x.Key, x.Secret, x.Pass));
+        var client = _clientProvider.GetRestClient(UserId.ToString(), new ExchangeCredentials(credentials), environments);
+
+        var feeClient = client.GetFeeClient(TradingMode.Spot, exchange);
+        if (feeClient == null)
+            return ApiResult<ApiExchangeFees>.Error(ErrorType.InvalidOperation, null, "Not available");
+
+        var symbolParts = symbolId.Split('-');
+        var fees = await feeClient.GetFeesAsync(new GetFeeRequest(new SharedSymbol(TradingMode.Spot, symbolParts[1], symbolParts[2])));
+        if (!fees)
+            return ApiResult<ApiExchangeFees>.Error(fees.Error!.ErrorType, fees.Error.ErrorCode, fees.Error.Message);
+
+        return ApiResult<ApiExchangeFees>.Ok(new ApiExchangeFees()
+        {
+            Exchange = exchange,
+            MakerFee = fees.Data.MakerFee,
+            TakerFee = fees.Data.TakerFee
         });
     }
 

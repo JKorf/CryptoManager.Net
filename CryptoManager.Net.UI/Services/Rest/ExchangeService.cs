@@ -20,6 +20,15 @@ namespace CryptoManager.Net.UI.Services
             await GetAsync("exchanges/names", onSuccess, onError ?? (x => NotifyError("Get Exchange Names", x)), false);
         }
 
+        public async Task GetFeesAsync(
+            Func<ApiExchangeFees, Task> onSuccess,
+            Func<ApiError, Task>? onError,
+            string exchange,
+            string symbolId)
+        {
+            await GetAsync($"exchanges/{exchange}/fees?symbolId=" + symbolId, onSuccess, onError ?? (x => NotifyError("Get Exchange Fees", x)), true);
+        }
+
         public async Task GetExchangesAsync(
             Func<Page<ApiExchange>, Task> onSuccess,
             Func<ApiError, Task>? onError,

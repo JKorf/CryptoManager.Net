@@ -44,8 +44,19 @@ else
     </MudItem>
     <MudItem xl="3" lg="4" md="12" sm="12" xs="12">
         <PlaceOrderComponent SymbolDetails="_symbol" BaseAssetBalance="_baseAssetBalance" QuoteAssetBalance="_quoteAssetBalance" OnOrderPlacement="(() => {})" />
+        
+        @if (_fees != null)
+        {
+            <MudPaper Style="margin-top: 10px; padding: 10px;">
+                <MudText Typo="Typo.body1" Style="border-bottom: 1px solid #444; padding: 0 10px; margin: 0 -10px;">Fees</MudText>
+                <MudStack Row="true" Justify="Justify.SpaceBetween" Style="margin: 10px;">
+                    <MudText Style="font-size: 14px">Maker: @_fees.MakerFee%</MudText>
+                    <MudText Style="font-size: 14px">Taker: @_fees.TakerFee%</MudText>
+                </MudStack>
+            </MudPaper>
+        }
 
-        <MudPaper Style="margin-top: 10p">
+        <MudPaper Style="margin-top: 10px">
             <MudElement HtmlTag="div" Style="border-bottom: 1px solid #444; margin: 10px 0px; padding: 10px 10px 0px 10px">
                 <MudElement HtmlTag="div" Style="@("display: inline-block; cursor:pointer; padding: 0 4px;" + (_showTrades ? "" : "border-bottom: 1px solid #eee;"))" @onclick="@(x => _showTrades = false)">
                     <MudText Typo="Typo.body1">orderbook</MudText>
@@ -92,6 +103,7 @@ else
 
     private List<BreadcrumbItem> breadcrumbs = new List<BreadcrumbItem>();
     private ApiSymbolDetails? _symbol;
+    private ApiExchangeFees? _fees;
     private decimal _baseAssetBalance;
     private decimal _quoteAssetBalance;
     private bool _showTrades = false;
@@ -142,7 +154,15 @@ else
             },
             null, exchange: _symbol.Exchange, asset: _symbol.QuoteAsset);
 
-        await Task.WhenAll(exTask, balTask);
+        var feesTask = ExchangeService.GetFeesAsync(
+            data =>
+            {
+                _fees = data;
+                return Task.CompletedTask;
+            }, 
+            x => Task.CompletedTask,
+            _symbol.Exchange, _symbol.Id);
+        await Task.WhenAll(exTask, balTask, feesTask);
 
         InitializeBreadcrumbs(_symbol.Name, _symbol.Id);
 
