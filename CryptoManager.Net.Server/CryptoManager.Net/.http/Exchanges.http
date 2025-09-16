@@ -36,7 +36,7 @@ Accept: application/json
 
 @exchange=Bybit
 
-GET {{HostAddress}}/exchanges/{{exchange}}/fees?symbol=Bybit-ETH-USDT
+GET {{HostAddress}}/exchanges/{{exchange}}/fees?symbolId=Bybit-ETH-USDT
 Accept: application/json
 Authorization: Bearer {{login.response.body.$.data.jwt}}
 
