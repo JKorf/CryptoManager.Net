@@ -64,7 +64,7 @@
             {
                 _connectionIssues = true;
                 await InvokeAsync(StateHasChanged);
-            });
+            }, pageSize: 100);
     }
 
     public void Dispose()
