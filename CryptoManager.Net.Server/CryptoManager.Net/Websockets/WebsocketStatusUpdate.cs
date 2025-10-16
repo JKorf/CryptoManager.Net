@@ -14,6 +14,6 @@ namespace CryptoManager.Net.Websockets
         [JsonPropertyName("exchange"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string? Exchange { get; set; }
         [JsonPropertyName("status")]
-        public SubscriptionStatus Status { get; set; }
+        public StreamStatus Status { get; set; }
     }
 }

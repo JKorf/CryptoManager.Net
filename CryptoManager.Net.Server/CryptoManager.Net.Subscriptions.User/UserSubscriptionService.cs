@@ -166,13 +166,13 @@ namespace CryptoManager.Net.Subscriptions.User
 
         private void ProcessConnectionRestored(int userId, string exchange)
         {
-            var evnt = new SubscriptionEvent(SubscriptionStatus.Restored) { Exchange = exchange };
+            var evnt = new SubscriptionEvent(StreamStatus.Restored) { Exchange = exchange };
             if (_subscriptions.TryGetValue(userId, out var subscription))
                 subscription.Invoke(evnt);
         }
         private void ProcessConnectionLost(int userId, string exchange)
         {
-            var evnt = new SubscriptionEvent(SubscriptionStatus.Interrupted) { Exchange = exchange };
+            var evnt = new SubscriptionEvent(StreamStatus.Interrupted) { Exchange = exchange };
             if (_subscriptions.TryGetValue(userId, out var subscription))
                 subscription.Invoke(evnt);
         }

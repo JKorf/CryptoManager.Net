@@ -3,15 +3,15 @@
     public class SubscriptionEvent
     {
         public string? Exchange { get; set; }
-        public SubscriptionStatus Status { get; set; }
+        public StreamStatus Status { get; set; }
 
-        public SubscriptionEvent(SubscriptionStatus status)
+        public SubscriptionEvent(StreamStatus status)
         {
             Status = status;
         }
     }
 
-    public enum SubscriptionStatus
+    public enum StreamStatus
     {
         Interrupted,
         Restored,

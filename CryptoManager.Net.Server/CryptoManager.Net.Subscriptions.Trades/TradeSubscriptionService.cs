@@ -92,13 +92,13 @@ namespace CryptoManager.Net.Subscriptions.Trades
 
         private void ProcessConnectionRestored(string symbolId)
         {
-            var evnt = new SubscriptionEvent(SubscriptionStatus.Restored);
+            var evnt = new SubscriptionEvent(StreamStatus.Restored);
             foreach (var updateSubscription in _connectionSubscriptions.SelectMany(x => x.Value).Where(x => x.Value.SymbolId == symbolId))
                 updateSubscription.Value.StatusCallback(evnt);
         }
         private void ProcessConnectionLost(string symbolId)
         {
-            var evnt = new SubscriptionEvent(SubscriptionStatus.Interrupted);
+            var evnt = new SubscriptionEvent(StreamStatus.Interrupted);
             foreach (var updateSubscription in _connectionSubscriptions.SelectMany(x => x.Value).Where(x => x.Value.SymbolId == symbolId))
                 updateSubscription.Value.StatusCallback(evnt);
         }

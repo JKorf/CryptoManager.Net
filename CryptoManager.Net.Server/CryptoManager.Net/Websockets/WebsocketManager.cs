@@ -278,7 +278,7 @@ namespace CryptoManager.Net.Websockets
                     await keyContext.SaveChangesAsync();
 
                     foreach (var result in subResult.Where(x => !x.Success).GroupBy(x => x.Exchange).Select(x => x.First()))               
-                        SendStatusUpdate(connection.Connection, "0", SubscriptionStatus.Interrupted, result.Exchange, result.Topic + " - " + result.Error!.Message);
+                        SendStatusUpdate(connection.Connection, "0", StreamStatus.Interrupted, result.Exchange, result.Topic + " - " + result.Error!.Message);
                     
                 });
 
@@ -581,7 +581,7 @@ namespace CryptoManager.Net.Websockets
             _ = socket.SendAsync(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message, _serializerOptions)), WebSocketMessageType.Text, true, _cts.Token);
         }
 
-        private void SendStatusUpdate(WebSocket socket, string id, SubscriptionStatus status, string? exchange = null, string? info = null)
+        private void SendStatusUpdate(WebSocket socket, string id, StreamStatus status, string? exchange = null, string? info = null)
         {
             var message = new WebsocketStatusUpdate { Id = id, Status = status, Exchange = exchange, Info = info };
             _ = socket.SendAsync(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message, _serializerOptions)), WebSocketMessageType.Text, true, _cts.Token);

@@ -264,7 +264,7 @@ namespace CryptoManager.Net.Controllers
             var credentials = apiKeys.ToDictionary(x => x.Exchange, x => new ApiCredentials(x.Key, x.Secret, x.Pass));
             var client = _clientProvider.GetRestClient(UserId.ToString(), new ExchangeCredentials(credentials), environments);
 
-            var balanceResults = await client.GetBalancesAsync(new GetBalancesRequest(TradingMode.Spot), apiKeys.Select(x => x.Exchange));
+            var balanceResults = await client.GetBalancesAsync(new GetBalancesRequest(SharedAccountType.Spot), apiKeys.Select(x => x.Exchange));
 
             var dbBalances = new List<UserBalance>();
             foreach (var result in balanceResults.Where(x => x.Success))

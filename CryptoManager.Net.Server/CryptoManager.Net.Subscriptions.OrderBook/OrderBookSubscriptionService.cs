@@ -107,9 +107,9 @@ namespace CryptoManager.Net.Subscriptions.OrderBook
         {
             SubscriptionEvent? evnt = null;
             if (newState == OrderBookStatus.Synced)
-                evnt = new SubscriptionEvent(SubscriptionStatus.Restored);
+                evnt = new SubscriptionEvent(StreamStatus.Restored);
             if (newState == OrderBookStatus.Reconnecting || (oldState == OrderBookStatus.Synced && newState == OrderBookStatus.Syncing))
-                evnt = new SubscriptionEvent(SubscriptionStatus.Interrupted);
+                evnt = new SubscriptionEvent(StreamStatus.Interrupted);
 
             if (evnt == null)
                 return;
