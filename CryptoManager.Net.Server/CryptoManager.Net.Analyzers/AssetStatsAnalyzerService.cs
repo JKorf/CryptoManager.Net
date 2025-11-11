@@ -1,4 +1,5 @@
-﻿using CryptoManager.Net.Database;
+﻿using CryptoExchange.Net.SharedApis;
+using CryptoManager.Net.Database;
 using CryptoManager.Net.Database.Models;
 using CryptoManager.Net.Publish;
 using EFCore.BulkExtensions;
@@ -82,13 +83,18 @@ namespace CryptoManager.Net.Analyzers
                         }
                         else
                         {
+                            // For value and volume it doesn't matter which ticker type
+                            // but for change percentage we only want to use 24h stats
+                            var ticker24H = validExchangeAssets.Where(x => x.TickerType == SharedTickerType.Day24H);
+                            var changeList = ticker24H.Any() ? ticker24H : validExchangeAssets;
+
                             updateList.Add(new Asset
                             {
                                 Id = assetGroup.Key,
                                 AssetType = assetGroup.First().AssetType,
                                 Value = validExchangeAssets.Sum(x => x.Value * x.Volume) / validExchangeAssets.Sum(x => x.Volume),
                                 Volume = validExchangeAssets.Sum(x => x.Volume),
-                                ChangePercentage = validExchangeAssets.Sum(x => x.ChangePercentage * x.Volume) / validExchangeAssets.Sum(x => x.Volume),
+                                ChangePercentage = changeList.Sum(x => x.ChangePercentage * x.Volume) / changeList.Sum(x => x.Volume),
                                 UpdateTime = DateTime.UtcNow
                             });
                         }

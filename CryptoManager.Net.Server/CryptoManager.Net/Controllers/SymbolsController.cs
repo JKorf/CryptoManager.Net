@@ -82,7 +82,8 @@ public class SymbolsController : ApiController
             Volume = x.Volume ?? 0,
             QuoteVolume = x.QuoteVolume,
             UsdVolume = x.UsdVolume,
-            ChangePercentage = x.ChangePercentage
+            ChangePercentage = x.ChangePercentage,
+            TickerType = x.TickerType
         }));
     }
 

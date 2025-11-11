@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using CryptoExchange.Net.SharedApis;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
 namespace CryptoManager.Net.Database.Models
@@ -46,6 +47,7 @@ namespace CryptoManager.Net.Database.Models
         public AssetType QuoteAssetType { get; set; }
         public AssetType BaseAssetType { get; set; }
 
+        public SharedTickerType TickerType { get; set; }
         public bool? Enabled { get; set; }
 
         public DateTime UpdateTime { get; set; }

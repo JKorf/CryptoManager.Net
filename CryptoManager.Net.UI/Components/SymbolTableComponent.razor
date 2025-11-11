@@ -1,4 +1,5 @@
-﻿<MudTable T="ApiSymbol" ServerData="ServerReload" @ref="_table" OnRowClick="@((x) => OnSymbolClick(x.Item!))">
+﻿@using CryptoExchange.Net.SharedApis
+<MudTable T="ApiSymbol" ServerData="ServerReload" @ref="_table" OnRowClick="@((x) => OnSymbolClick(x.Item!))">
     <ToolBarContent>
         <MudTextField Style="max-width: 400px;" T="string" ValueChanged="@(s => OnSearch?.Invoke(s))" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
         <MudSpacer />
@@ -54,7 +55,17 @@
         }
         @if (!ExcludedColumns.Contains(nameof(ApiSymbol.ChangePercentage)))
         {
-            <MudTd DataLabel="Price Change" Style="cursor: pointer; text-align:right"><ColorVal Value="@(Math.Round(context.ChangePercentage ?? 0, 2))" Suffix="%" /></MudTd>
+            <MudTd DataLabel="Price Change" Style="cursor: pointer; text-align:right">
+                <MudElement HtmlTag="div" Style="position: relative">
+                    <ColorVal Value="@(Math.Round(context.ChangePercentage ?? 0, 2))" Suffix="%" />
+                    @if (context.TickerType != SharedTickerType.Day24H)
+                    {
+                        <MudTooltip RootStyle="margin-left: 8px;" Text="The statistics for this ticker are not based on 24h so might not be comparable to other tickers">
+                            <MudIcon Size="Size.Small" Icon="@Icons.Material.Filled.Warning"></MudIcon>
+                        </MudTooltip>
+                    }
+                </MudElement>
+            </MudTd>
         }
     </RowTemplate>
     <NoRecordsContent>

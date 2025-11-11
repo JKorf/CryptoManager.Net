@@ -59,7 +59,8 @@ namespace CryptoManager.Net.Processor.Tickers
                     LowPrice = ClampValue(item.LowPrice),
                     Volume = ClampValue(item.Volume),
                     QuoteVolume = ClampValue(item.QuoteVolume),
-                    UpdateTime = DateTime.UtcNow
+                    UpdateTime = DateTime.UtcNow,
+                    TickerType = item.TickerType
                 };
 
                 // Try to derive some data if it's not returned by the API
@@ -98,7 +99,8 @@ namespace CryptoManager.Net.Processor.Tickers
                         nameof(ExchangeSymbol.LowPrice),
                         nameof(ExchangeSymbol.Volume),
                         nameof(ExchangeSymbol.QuoteVolume),
-                        nameof(ExchangeSymbol.UpdateTime)
+                        nameof(ExchangeSymbol.UpdateTime),
+                        nameof(ExchangeSymbol.TickerType)
                     ],
                     WithHoldlock = false
                 });

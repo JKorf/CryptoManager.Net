@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using CryptoExchange.Net.SharedApis;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
 namespace CryptoManager.Net.Database.Models
@@ -21,6 +22,7 @@ namespace CryptoManager.Net.Database.Models
         [Precision(12, 4)]
         public decimal? ChangePercentage { get; set; }
 
+        public SharedTickerType TickerType { get; set; }
         public DateTime UpdateTime { get; set; }
     }
 }

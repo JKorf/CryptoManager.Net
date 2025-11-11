@@ -1,4 +1,6 @@
-﻿namespace CryptoManager.Net.Models.Response
+﻿using CryptoExchange.Net.SharedApis;
+
+namespace CryptoManager.Net.Models.Response
 {
     public class ApiSymbol
     {
@@ -12,5 +14,6 @@
         public decimal? QuoteVolume { get; set; }
         public decimal? UsdVolume { get; set; }
         public decimal? ChangePercentage { get; set; }
+        public SharedTickerType TickerType { get; set; }
     }
 }

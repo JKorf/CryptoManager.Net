@@ -1,4 +1,6 @@
-﻿namespace CryptoManager.Net.Models
+﻿using CryptoExchange.Net.SharedApis;
+
+namespace CryptoManager.Net.Models
 {
     /// <summary>
     /// Ticker info
@@ -45,5 +47,10 @@
         /// Change percentage in the last 24h
         /// </summary>
         public decimal? ChangePercentage { get; set; }
+
+        /// <summary>
+        /// Ticker type
+        /// </summary>
+        public SharedTickerType TickerType { get; set; }
     }
 }

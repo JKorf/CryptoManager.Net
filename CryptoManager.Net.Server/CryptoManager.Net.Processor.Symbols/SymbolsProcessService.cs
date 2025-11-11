@@ -67,7 +67,6 @@ namespace CryptoManager.Net.Processor.Symbols
                 var symbol = new ExchangeSymbol
                 {
                     Id = id,
-
                     Exchange = update.Exchange!,
                     BaseAssetExchangeId = $"{update.Exchange}-{item.BaseAsset.ToUpperInvariant()}",
                     QuoteAssetExchangeId = $"{update.Exchange}-{item.QuoteAsset.ToUpperInvariant()}",

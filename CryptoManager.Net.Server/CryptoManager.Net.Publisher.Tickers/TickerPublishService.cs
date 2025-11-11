@@ -202,7 +202,8 @@ namespace CryptoManager.Net.Publisher.Tickers
             if (@event.Data.SharedSymbol == null)
                 return;
 
-            data.Add(@event.Exchange + @event.Data.Symbol, ParseTicker(@event.Exchange, @event.Data));
+            var tickerOptions = _restClient.GetSpotTickerClient(@event.Exchange)!.GetSpotTickersOptions;
+            data.Add(@event.Exchange + @event.Data.Symbol, ParseTicker(@event.Exchange, @event.Data, tickerOptions.TickerType));
             _ = _tickerBatcher.AddAsync(data);
         }
 
@@ -217,7 +218,8 @@ namespace CryptoManager.Net.Publisher.Tickers
                     continue;
                 }
 
-                data.Add(@event.Exchange + symbol.Symbol, ParseTicker(@event.Exchange, symbol));
+                var tickerOptions = _restClient.GetSpotTickerClient(@event.Exchange)!.GetSpotTickersOptions;
+                data.Add(@event.Exchange + symbol.Symbol, ParseTicker(@event.Exchange, symbol, tickerOptions.TickerType));
             }
 
 #warning todo
@@ -237,20 +239,20 @@ namespace CryptoManager.Net.Publisher.Tickers
                 }
 
                 var exchangeData = new PublishItem<Ticker>(result.Exchange);
-
+                var tickerOptions = _restClient.GetSpotTickerClient(result.Exchange)!.GetSpotTickersOptions;
                 var data = new Dictionary<string, Ticker>();
                 foreach (var symbol in result.Data)
                 {
                     if (symbol.SharedSymbol == null)
                         continue;
 
-                    data.Add(result.Exchange + symbol.Symbol, ParseTicker(result.Exchange, symbol));
+                    data.Add(result.Exchange + symbol.Symbol, ParseTicker(result.Exchange, symbol, tickerOptions.TickerType));
                 }
                 _ = _tickerBatcher.AddAsync(data);
             }
         }
 
-        private Ticker ParseTicker(string exchange, SharedSpotTicker ticker)
+        private Ticker ParseTicker(string exchange, SharedSpotTicker ticker, SharedTickerType tickerType)
         {
             return new Ticker
             {
@@ -263,7 +265,8 @@ namespace CryptoManager.Net.Publisher.Tickers
                 LastPrice = ticker.LastPrice,
                 LowPrice = ticker.LowPrice,
                 Volume = ticker.Volume,
-                QuoteVolume = ticker.QuoteVolume
+                QuoteVolume = ticker.QuoteVolume,
+                TickerType = tickerType
             };
         }
     }
