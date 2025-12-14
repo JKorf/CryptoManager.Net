@@ -1,4 +1,5 @@
-﻿using CryptoExchange.Net.SharedApis;
+﻿using CryptoExchange.Net.Objects.Sockets;
+using CryptoExchange.Net.SharedApis;
 using CryptoManager.Net.Data;
 
 namespace CryptoManager.Net.Subscriptions.Tickers
@@ -7,9 +8,9 @@ namespace CryptoManager.Net.Subscriptions.Tickers
     {
         public string SymbolId { get; set; }
         public Action<SubscriptionEvent> StatusCallback { get; set; }
-        public Action<ExchangeEvent<SharedSpotTicker>> DataCallback { get; set; }
+        public Action<DataEvent<SharedSpotTicker>> DataCallback { get; set; }
 
-        public ConnectionSubscription(string symbolId, Action<SubscriptionEvent> statusCallback, Action<ExchangeEvent<SharedSpotTicker>> dataCallback)
+        public ConnectionSubscription(string symbolId, Action<SubscriptionEvent> statusCallback, Action<DataEvent<SharedSpotTicker>> dataCallback)
         {
             SymbolId = symbolId;
             StatusCallback = statusCallback;

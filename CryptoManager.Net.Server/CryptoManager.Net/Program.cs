@@ -35,6 +35,7 @@ builder.Services.AddResponseCaching();
 
 builder.Services.AddCryptoClients(options =>
 {
+    options.UseUpdatedDeserialization = true;
     options.CachingEnabled = false;
 });
 

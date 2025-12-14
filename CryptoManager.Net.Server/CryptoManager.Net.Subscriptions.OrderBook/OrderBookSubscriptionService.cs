@@ -35,7 +35,7 @@ namespace CryptoManager.Net.Subscriptions.OrderBook
         public async Task<CallResult> SubscribeAsync(
             string connectionId,
             string symbolId,
-            Action<ExchangeEvent<SharedOrderBook>> dataHandler,
+            Action<DataEvent<SharedOrderBook>> dataHandler,
             Action<SubscriptionEvent> statusHandler,
             CancellationToken ct)
         {
@@ -84,7 +84,7 @@ namespace CryptoManager.Net.Subscriptions.OrderBook
                     {
                         var snapshot = orderBook.Book;
                         var sharedBook = new SharedOrderBook(snapshot.asks.Take(10).ToArray(), snapshot.bids.Take(10).ToArray());
-                        ProcessUpdate(symbolId, new ExchangeEvent<SharedOrderBook>(symbolData[0], new DataEvent<SharedOrderBook>(sharedBook, null, symbolId, null, default, null)));
+                        ProcessUpdate(symbolId, new DataEvent<SharedOrderBook>(symbolData[0], sharedBook, DateTime.UtcNow, null).WithSymbol(symbolId));
 
                         await Task.Delay(100);
                     }
@@ -118,7 +118,7 @@ namespace CryptoManager.Net.Subscriptions.OrderBook
                 updateSubscription.Value.StatusCallback(evnt);
         }
 
-        private void ProcessUpdate(string symbolId, ExchangeEvent<SharedOrderBook> update)
+        private void ProcessUpdate(string symbolId, DataEvent<SharedOrderBook> update)
         {
             foreach (var updateSubscription in _connectionSubscriptions.SelectMany(x => x.Value).Where(x => x.Value.SymbolId == symbolId))
                 updateSubscription.Value.DataCallback(update);

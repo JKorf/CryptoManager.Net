@@ -195,7 +195,7 @@ namespace CryptoManager.Net.Publisher.Tickers
             return symbols.Where(x => exchangeSymbols.Any(y => x.Name == y.Name && x.Trading)).ToArray();
         }
 
-        private void ProcessUpdate(ExchangeEvent<SharedSpotTicker> @event)
+        private void ProcessUpdate(DataEvent<SharedSpotTicker> @event)
         {
             var exchangeData = new PublishItem<Ticker>(@event.Exchange);
             var data = new Dictionary<string, Ticker>();
@@ -207,7 +207,7 @@ namespace CryptoManager.Net.Publisher.Tickers
             _ = _tickerBatcher.AddAsync(data);
         }
 
-        private void ProcessUpdate(ExchangeEvent<SharedSpotTicker[]> @event)
+        private void ProcessUpdate(DataEvent<SharedSpotTicker[]> @event)
         {
             var exchangeData = new PublishItem<Ticker>(@event.Exchange);
             var data = new Dictionary<string, Ticker>();

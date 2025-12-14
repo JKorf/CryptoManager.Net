@@ -3,6 +3,7 @@ using CryptoClients.Net.Models;
 using CryptoExchange.Net.Authentication;
 using CryptoExchange.Net.Objects;
 using CryptoExchange.Net.Objects.Errors;
+using CryptoExchange.Net.Objects.Sockets;
 using CryptoExchange.Net.SharedApis;
 using CryptoManager.Net.Data;
 using Microsoft.Extensions.Configuration;
@@ -43,9 +44,9 @@ namespace CryptoManager.Net.Subscriptions.User
             string connectionId,
             int userId,
             IEnumerable<UserExchangeAuthentication> auths,
-            Action<ExchangeEvent<SharedBalance[]>> balanceHandler,
-            Action<ExchangeEvent<SharedSpotOrder[]>> orderHandler,
-            Action<ExchangeEvent<SharedUserTrade[]>> userTradeHandler,
+            Action<DataEvent<SharedBalance[]>> balanceHandler,
+            Action<DataEvent<SharedSpotOrder[]>> orderHandler,
+            Action<DataEvent<SharedUserTrade[]>> userTradeHandler,
             Action<SubscriptionEvent> statusHandler,
             CancellationToken ct)
         {
@@ -177,19 +178,19 @@ namespace CryptoManager.Net.Subscriptions.User
                 subscription.Invoke(evnt);
         }
 
-        private void HandleBalanceUpdate(int userId, ExchangeEvent<SharedBalance[]> update)
+        private void HandleBalanceUpdate(int userId, DataEvent<SharedBalance[]> update)
         {
             if (_subscriptions.TryGetValue(userId, out var subscription))
                 subscription.Invoke(update);
         }
 
-        private void HandleOrderUpdate(int userId, ExchangeEvent<SharedSpotOrder[]> update)
+        private void HandleOrderUpdate(int userId, DataEvent<SharedSpotOrder[]> update)
         {
             if (_subscriptions.TryGetValue(userId, out var subscription))
                 subscription.Invoke(update);
         }
 
-        private void HandleUserTradeUpdate(int userId, ExchangeEvent<SharedUserTrade[]> update)
+        private void HandleUserTradeUpdate(int userId, DataEvent<SharedUserTrade[]> update)
         {
             if (_subscriptions.TryGetValue(userId, out var subscription))
                 subscription.Invoke(update);

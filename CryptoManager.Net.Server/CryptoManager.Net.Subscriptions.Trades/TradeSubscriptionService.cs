@@ -1,5 +1,6 @@
 ﻿using CryptoClients.Net.Interfaces;
 using CryptoExchange.Net.Objects;
+using CryptoExchange.Net.Objects.Sockets;
 using CryptoExchange.Net.SharedApis;
 using CryptoManager.Net.Data;
 using Microsoft.Extensions.Logging;
@@ -33,7 +34,7 @@ namespace CryptoManager.Net.Subscriptions.Trades
         public async Task<CallResult> SubscribeAsync(
             string connectionId, 
             string symbolId,
-            Action<ExchangeEvent<SharedTrade[]>> handler,
+            Action<DataEvent<SharedTrade[]>> handler,
             Action<SubscriptionEvent> statusHandler,
             CancellationToken ct)
         {
@@ -103,7 +104,7 @@ namespace CryptoManager.Net.Subscriptions.Trades
                 updateSubscription.Value.StatusCallback(evnt);
         }
 
-        private void ProcessUpdate(string symbolId, ExchangeEvent<SharedTrade[]> update)
+        private void ProcessUpdate(string symbolId, DataEvent<SharedTrade[]> update)
         {
             foreach (var updateSubscription in _connectionSubscriptions.SelectMany(x => x.Value).Where(x => x.Value.SymbolId == symbolId))
                 updateSubscription.Value.DataCallback(update);

@@ -1,4 +1,5 @@
 ﻿using CryptoExchange.Net.Objects.Errors;
+using CryptoExchange.Net.Objects.Sockets;
 using CryptoExchange.Net.SharedApis;
 using CryptoManager.Net.Auth;
 using CryptoManager.Net.Data;
@@ -365,7 +366,7 @@ namespace CryptoManager.Net.Websockets
             }
         }
 
-        private void ProcessUserTradeUpdate(WebsocketConnection connection, ExchangeEvent<SharedUserTrade[]> @event)
+        private void ProcessUserTradeUpdate(WebsocketConnection connection, DataEvent<SharedUserTrade[]> @event)
         {
             _logger.LogDebug("Received user trade update for user {User}, exchange {Exchange}", connection.UserId, @event.Exchange);
             _ = _userTradeBatcher.AddAsync(@event.Data.ToDictionary(x => $"{connection.UserId}-{@event.Exchange}-{x.SharedSymbol!.BaseAsset}-{x.SharedSymbol!.QuoteAsset}-{x.Id}", x => new UserTrade
@@ -386,7 +387,7 @@ namespace CryptoManager.Net.Websockets
             }));
         }
 
-        private void ProcessOrderUpdate(WebsocketConnection connection, ExchangeEvent<SharedSpotOrder[]> @event)
+        private void ProcessOrderUpdate(WebsocketConnection connection, DataEvent<SharedSpotOrder[]> @event)
         {
             _logger.LogDebug("Received order update for user {User}, exchange {Exchange}", connection.UserId, @event.Exchange);
             var trades = @event.Data.Where(x => x.LastTrade != null).Select(y => y.LastTrade!);
@@ -431,7 +432,7 @@ namespace CryptoManager.Net.Websockets
             }));
         }
 
-        private void ProcessBalanceUpdate(WebsocketConnection connection, ExchangeEvent<SharedBalance[]> @event)
+        private void ProcessBalanceUpdate(WebsocketConnection connection, DataEvent<SharedBalance[]> @event)
         {
             _logger.LogDebug("Received balance update for user {User}, exchange {Exchange}", connection.UserId, @event.Exchange);
             
