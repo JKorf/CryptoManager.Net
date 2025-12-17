@@ -127,6 +127,11 @@ namespace CryptoManager.Net.Publisher.Tickers
 
                 var offset = 0;
                 var perPage = tickerClient.SubscribeTickerOptions.MaxSymbolCount ?? exchangeSymbols.Length;
+
+#warning remove with updated Bitget.Net version
+                if (tickerClient.Exchange == "Bitget")
+                    perPage = 50;
+
                 var pages = Math.Ceiling(exchangeSymbols.Length / (double)perPage);
                 if (pages > 10)
                     // Needs more than 10 subs to subscribe to all symbols, just go with ticker
