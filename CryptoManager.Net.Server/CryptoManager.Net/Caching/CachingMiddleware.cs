@@ -31,7 +31,7 @@ namespace CryptoManager.Net.Caching
 
             var allowAnon = context.Features.Get<IEndpointFeature>()?.Endpoint?.Metadata.Any(x => x is AllowAnonymousAttribute) == true;
             var key = context.Request.Path + context.Request.QueryString.ToString();
-            if (!allowAnon) 
+            if (!allowAnon)
             {
                 context.Items.TryGetValue("userId", out var userId);
                 key = userId + key;
@@ -55,7 +55,7 @@ namespace CryptoManager.Net.Caching
             _cache.Set(key, responseJson, TimeSpan.FromSeconds(cacheAttr.Duration));
             tempResponseStream.Position = 0;
             await tempResponseStream.CopyToAsync(originalResponseStream);
-            
+
         }
     }
 }

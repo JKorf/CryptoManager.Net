@@ -24,7 +24,7 @@ namespace CryptoManager.Net.Database.Models
         public decimal? QuantityFilledQuote { get; set; }
         [Precision(28, 8)]
         public decimal? AveragePrice { get; set; }
-        public DateTime CreateTime { get; set; }        
+        public DateTime CreateTime { get; set; }
         public DateTime UpdateTime { get; set; }
         public int UserId { get; set; }
         public virtual User User { get; set; } = default!;

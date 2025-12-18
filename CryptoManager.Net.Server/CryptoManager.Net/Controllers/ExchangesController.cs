@@ -27,7 +27,7 @@ public class ExchangesController : ApiController
     private readonly string[]? _enabledExchanges;
 
     public ExchangesController(
-        ILogger<ExchangesController> logger, 
+        ILogger<ExchangesController> logger,
         IConfiguration configuration,
         IExchangeUserClientProvider clientProvider,
         TrackerContext dbContext) : base(dbContext)

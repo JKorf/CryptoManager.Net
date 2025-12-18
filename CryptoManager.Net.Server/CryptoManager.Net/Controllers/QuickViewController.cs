@@ -28,7 +28,7 @@ namespace CryptoManager.Net.Controllers
         }
 
         [HttpPost]
-        public async Task<ApiResult> AddSymbolAsync([FromBody]ApiQuickViewConfig request)
+        public async Task<ApiResult> AddSymbolAsync([FromBody] ApiQuickViewConfig request)
         {
             var currentCount = await _dbContext.UserQuickViewConfigurations.Where(x => x.UserId == UserId).CountAsync();
             if (currentCount >= _maxSymbols)

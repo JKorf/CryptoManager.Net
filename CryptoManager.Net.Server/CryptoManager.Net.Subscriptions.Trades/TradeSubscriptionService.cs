@@ -32,7 +32,7 @@ namespace CryptoManager.Net.Subscriptions.Trades
         }
 
         public async Task<CallResult> SubscribeAsync(
-            string connectionId, 
+            string connectionId,
             string symbolId,
             Action<DataEvent<SharedTrade[]>> handler,
             Action<SubscriptionEvent> statusHandler,
@@ -81,7 +81,7 @@ namespace CryptoManager.Net.Subscriptions.Trades
                 subscription.Data.ConnectionRestored += x => ProcessConnectionRestored(symbolId);
                 _updateSubscriptions.TryAdd(symbolId, new TradeUpdateSubscription(1, subscription.Data));
                 _logger.LogInformation("Subscribed to Trade updates for {Symbol}, now {TotalSubs} Trade subscriptions for {DiffSubs} different symbols", symbolId, _connectionSubscriptions.Sum(x => x.Value.Count), _updateSubscriptions.Count);
-                
+
             }
             finally
             {
@@ -149,7 +149,7 @@ namespace CryptoManager.Net.Subscriptions.Trades
             if (!_connectionSubscriptions.TryGetValue(connectionId, out var subscriptions))
                 return;
 
-            foreach(var sub in subscriptions)
+            foreach (var sub in subscriptions)
                 await UnsubscribeAsync(connectionId, sub.Value.SymbolId);
 
             _connectionSubscriptions.TryRemove(connectionId, out _);

@@ -17,7 +17,7 @@ namespace CryptoManager.Net.Auth
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
-            if (context.Request.Method == HttpMethod.Options.Method 
+            if (context.Request.Method == HttpMethod.Options.Method
                 || context.Request.Method == HttpMethod.Connect.Method)
             {
                 await next(context);

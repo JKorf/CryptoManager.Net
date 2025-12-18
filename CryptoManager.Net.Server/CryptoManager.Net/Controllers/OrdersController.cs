@@ -95,7 +95,7 @@ namespace CryptoManager.Net.Controllers
             string baseAsset,
             string quoteAsset,
             string? orderBy = null,
-            OrderDirection? orderDirection = null, 
+            OrderDirection? orderDirection = null,
             int page = 1,
             int pageSize = 20)
         {

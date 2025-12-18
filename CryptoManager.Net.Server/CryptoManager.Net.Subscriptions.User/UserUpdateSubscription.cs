@@ -57,7 +57,7 @@ namespace CryptoManager.Net.Subscriptions.User
 
         public void Invoke(DataEvent<SharedBalance[]> update)
         {
-            lock(_lock)
+            lock (_lock)
             {
                 foreach (var callback in _callbacks)
                     callback.BalanceCallback(update);
@@ -100,10 +100,10 @@ namespace CryptoManager.Net.Subscriptions.User
         public Action<DataEvent<SharedUserTrade[]>> UserTradeCallback { get; set; }
         public Action<SubscriptionEvent> StatusCallback { get; set; }
 
-        public UserCallbacks(string connectionId, 
+        public UserCallbacks(string connectionId,
             Action<DataEvent<SharedBalance[]>> balanceCallback,
             Action<DataEvent<SharedSpotOrder[]>> orderCallback,
-            Action<DataEvent<SharedUserTrade[]>> userTradeCallback, 
+            Action<DataEvent<SharedUserTrade[]>> userTradeCallback,
             Action<SubscriptionEvent> statusCallback)
         {
             ConnectionId = connectionId;

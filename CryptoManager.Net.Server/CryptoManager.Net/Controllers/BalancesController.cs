@@ -25,9 +25,9 @@ namespace CryptoManager.Net.Controllers
         private readonly IExchangeUserClientProvider _clientProvider;
 
         public BalancesController(
-            ILogger<BalancesController> logger, 
+            ILogger<BalancesController> logger,
             IExchangeUserClientProvider clientProvider,
-            TrackerContext dbContext) : base(dbContext) 
+            TrackerContext dbContext) : base(dbContext)
         {
             _logger = logger;
             _clientProvider = clientProvider;
@@ -161,8 +161,8 @@ namespace CryptoManager.Net.Controllers
                 var orderedData = allData.OrderBy(x => x.Timestamp).ToList();
 
                 data = new List<UserValuation>();
-                for(var i = orderedData.Count - 1; i >= 0; i -= 3)                
-                    data.Add(orderedData[i]);                
+                for (var i = orderedData.Count - 1; i >= 0; i -= 3)
+                    data.Add(orderedData[i]);
             }
             else
             {
@@ -176,7 +176,7 @@ namespace CryptoManager.Net.Controllers
 
                 var lastMonth = -1;
                 data = new List<UserValuation>();
-                foreach(var item in allData.OrderBy(x => x.Timestamp))
+                foreach (var item in allData.OrderBy(x => x.Timestamp))
                 {
                     if (item.Timestamp.Month != lastMonth)
                     {
@@ -203,7 +203,7 @@ namespace CryptoManager.Net.Controllers
             foreach (var item in dataExchange)
                 result.Add(new ApiAssetBalance { Name = item.Asset, Value = item.UsdValue, Price = Math.Round(item.UsdValue / item.Total, 8) });
 
-            foreach(var item in dataExternal)
+            foreach (var item in dataExternal)
             {
                 var existing = result.SingleOrDefault(x => x.Name == item.Asset);
                 if (existing == null)

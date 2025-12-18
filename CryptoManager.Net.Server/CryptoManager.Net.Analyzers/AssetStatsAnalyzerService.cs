@@ -6,7 +6,6 @@ using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace CryptoManager.Net.Analyzers
 {
@@ -66,7 +65,7 @@ namespace CryptoManager.Net.Analyzers
                         {
                             // Determine what the correct values are
                             var weightedAverageValue = validExchangeAssets.Sum(x => x.Value!.Value * x.Volume) / validExchangeAssets.Sum(x => x.Volume);
-                            
+
                             // Remove all exchange assets which differ more than 20%
                             validExchangeAssets.RemoveAll(x => Math.Abs(1 - (x.Value!.Value / weightedAverageValue)) > 0.2m);
                         }

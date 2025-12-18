@@ -72,7 +72,7 @@ namespace CryptoManager.Net.Subscriptions.User
 
                 var cts = new CancellationTokenSource();
                 _subscriptions.TryAdd(userId, new UserUpdateSubscription(
-                    userId, 
+                    userId,
                     socketClient,
                     new UserCallbacks(connectionId, balanceHandler, orderHandler, userTradeHandler, statusHandler),
                     cts));
@@ -87,12 +87,13 @@ namespace CryptoManager.Net.Subscriptions.User
                 exchanges = exchanges.Where(x => !listenKeyErrors.Any(y => y.Exchange == x)).ToList();
                 var balanceResults = await socketClient.SubscribeToBalanceUpdatesAsync(new SubscribeBalancesRequest(tradingMode: TradingMode.Spot), x => HandleBalanceUpdate(userId, x), exchanges, listenKeys);
                 var invalidKeysErrors = balanceResults.Where(x => !x.Success && x.Error!.ErrorType == ErrorType.Unauthorized);
-                
+
                 exchanges = exchanges.Where(x => !invalidKeysErrors.Any(y => y.Exchange == x));
                 var spotOrderResults = await socketClient.SubscribeToSpotOrderUpdatesAsync(new SubscribeSpotOrderRequest(), x => HandleOrderUpdate(userId, x), exchanges, listenKeys);
                 var userTradeResults = await socketClient.SubscribeToUserTradeUpdatesAsync(new SubscribeUserTradeRequest(tradingMode: TradingMode.Spot), x => HandleUserTradeUpdate(userId, x), exchanges, listenKeys);
 
-                if (listenKeys.Where(x => x.Success).Select(x => x.Exchange).Any()) {
+                if (listenKeys.Where(x => x.Success).Select(x => x.Exchange).Any())
+                {
                     _ = Task.Run(async () =>
                     {
 #warning Mexc exchange has listenkey refresh event, which can't be handled automatically yet
@@ -142,7 +143,7 @@ namespace CryptoManager.Net.Subscriptions.User
                     response.Add(new SubscribeResult { Topic = "Orders", Error = sub.Error, Exchange = sub.Exchange });
                 foreach (var sub in userTradeResults)
                     response.Add(new SubscribeResult { Topic = "UserTrades", Error = sub.Error, Exchange = sub.Exchange });
-                
+
                 foreach (var result in listenKeyErrors)
                 {
                     response.Add(new SubscribeResult { Topic = "Balances", Error = result.Error, Exchange = result.Exchange });

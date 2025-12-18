@@ -68,13 +68,13 @@ namespace CryptoManager.Net.Processor.Tickers
                 {
                     if (symbol.LowPrice.HasValue && symbol.HighPrice.HasValue)
                         // Take average of high/low price as avg price
-                        symbol.QuoteVolume = (symbol.LowPrice.Value + symbol.HighPrice.Value) / 2 * symbol.Volume; 
+                        symbol.QuoteVolume = (symbol.LowPrice.Value + symbol.HighPrice.Value) / 2 * symbol.Volume;
                     if (symbol.ChangePercentage.HasValue)
                         // Take half of change percentage as avg price
-                        symbol.QuoteVolume = (symbol.LastPrice * Math.Abs((symbol.ChangePercentage.Value / 200) - 1)) * symbol.Volume; 
+                        symbol.QuoteVolume = (symbol.LastPrice * Math.Abs((symbol.ChangePercentage.Value / 200) - 1)) * symbol.Volume;
                     else
                         // Fallback to last price as avg price     
-                        symbol.QuoteVolume = symbol.LastPrice * symbol.Volume;                
+                        symbol.QuoteVolume = symbol.LastPrice * symbol.Volume;
                 }
 
                 if (symbol.Volume == null)
@@ -105,7 +105,7 @@ namespace CryptoManager.Net.Processor.Tickers
                     WithHoldlock = false
                 });
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to process Ticker update");
             }

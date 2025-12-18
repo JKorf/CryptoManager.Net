@@ -31,7 +31,7 @@ namespace CryptoManager.Net.Analyzers
                         var timestamp = DateTime.UtcNow;
 
                         var data = new Dictionary<int, UserValuation>();
-                        foreach(var item in allUserExchangeBalances)
+                        foreach (var item in allUserExchangeBalances)
                         {
                             data.Add(item.UserId, new UserValuation
                             {
@@ -42,7 +42,7 @@ namespace CryptoManager.Net.Analyzers
                             });
                         }
 
-                        foreach(var item in allUserExternalBalances)
+                        foreach (var item in allUserExternalBalances)
                         {
                             if (!data.TryGetValue(item.UserId, out var valuation))
                             {
@@ -55,7 +55,7 @@ namespace CryptoManager.Net.Analyzers
 
                         await context.BulkInsertOrUpdateAsync(data.Values.ToList(), new BulkConfig { WithHoldlock = false });
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
                         _logger.LogError(ex, "Failed to process user portfolio snapshot");
                         return;

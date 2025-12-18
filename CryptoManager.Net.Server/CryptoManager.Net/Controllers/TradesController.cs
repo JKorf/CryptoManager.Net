@@ -28,14 +28,14 @@ namespace CryptoManager.Net.Controllers
         }
 
         [HttpGet]
-        [ResponseCache(Duration = 3, Location = ResponseCacheLocation.Client, VaryByQueryKeys=["*"])]
+        [ResponseCache(Duration = 3, Location = ResponseCacheLocation.Client, VaryByQueryKeys = ["*"])]
         [ServerCache(Duration = 3)]
         public async Task<ApiResultPaged<IEnumerable<ApiUserTrade>>> ListAsync(
-            string? symbolId = null, 
+            string? symbolId = null,
             string? orderId = null,
             string? orderBy = null,
             OrderDirection? orderDirection = null,
-            int page = 1, 
+            int page = 1,
             int pageSize = 20)
         {
             var dbQuery = _dbContext.UserTrades.Where(x => x.UserId == UserId);
@@ -96,7 +96,7 @@ namespace CryptoManager.Net.Controllers
             {
                 var orderIdData = orderId.Split("-");
                 userTrades = await client.GetSpotOrderTradesAsync(symbolData[0], new GetOrderTradesRequest(new SharedSymbol(TradingMode.Spot, symbolData[1], symbolData[2]), orderIdData[4]));
-                
+
             }
             else
             {

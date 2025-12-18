@@ -20,7 +20,7 @@ namespace CryptoManager.Net.Controllers
         private readonly ILogger _logger;
         private readonly IExchangeUserClientProvider _clientProvider;
 
-        public ApiKeysController(ILogger<ApiKeysController> logger, TrackerContext dbContext, IExchangeUserClientProvider clientProvider): base(dbContext)
+        public ApiKeysController(ILogger<ApiKeysController> logger, TrackerContext dbContext, IExchangeUserClientProvider clientProvider) : base(dbContext)
         {
             _logger = logger;
             _clientProvider = clientProvider;
@@ -76,7 +76,7 @@ namespace CryptoManager.Net.Controllers
             _dbContext.UserApiKeys.Add(newKey);
             await _dbContext.SaveChangesAsync();
 
-            _clientProvider.ClearUserClients(UserId.ToString(), request.Exchange);            
+            _clientProvider.ClearUserClients(UserId.ToString(), request.Exchange);
             return ApiResult<int>.Ok(newKey.Id);
         }
 
@@ -120,7 +120,7 @@ namespace CryptoManager.Net.Controllers
         {
             apiSecret = WebUtility.UrlDecode(apiSecret)
                 .Replace(' ', '+') // + char gets decoded to space
-                .Replace("\\n", "\n"); 
+                .Replace("\\n", "\n");
             var client = new ExchangeRestClient(options => options.ApiEnvironments = new Dictionary<string, string?> { { exchange, environment } });
             try
             {

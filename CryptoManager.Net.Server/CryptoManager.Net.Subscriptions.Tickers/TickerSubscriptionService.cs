@@ -33,7 +33,7 @@ namespace CryptoManager.Net.Subscriptions.Tickers
 
         public async Task<CallResult> SubscribeAsync(
             string connectionId,
-            string symbolId, 
+            string symbolId,
             Action<DataEvent<SharedSpotTicker>> handler,
             Action<SubscriptionEvent> statusHandler,
             CancellationToken ct)

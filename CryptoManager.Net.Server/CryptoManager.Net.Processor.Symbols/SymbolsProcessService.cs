@@ -6,7 +6,6 @@ using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using NetTopologySuite.Index.HPRtree;
 
 namespace CryptoManager.Net.Processor.Symbols
 {
@@ -137,7 +136,7 @@ namespace CryptoManager.Net.Processor.Symbols
                     WithHoldlock = false
                 });
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to process updated symbols in Symbol update");
             }
