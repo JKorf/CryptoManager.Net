@@ -58,7 +58,7 @@ namespace CryptoManager.Net.Publisher.Symbols
             var symbolsTasks = _restClient.GetSpotSymbolsAsync(new GetSymbolsRequest(), _enabledExchanges, _stoppingToken);
             await Task.WhenAll(symbolsTasks);
 
-            foreach(var result in symbolsTasks.Result)
+            foreach (var result in symbolsTasks.Result)
             {
                 if (!result)
                 {
@@ -69,7 +69,7 @@ namespace CryptoManager.Net.Publisher.Symbols
 
                 var exchangeData = new PublishItem<Symbol>(result.Exchange);
                 var data = new List<Symbol>();
-                foreach(var symbol in result.Data.Where(x => x.BaseAsset != x.QuoteAsset)) // Filter some weird symbol response
+                foreach (var symbol in result.Data.Where(x => x.BaseAsset != x.QuoteAsset)) // Filter some weird symbol response
                 {
                     data.Add(new Symbol
                     {

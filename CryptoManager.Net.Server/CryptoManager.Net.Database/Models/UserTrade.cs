@@ -21,7 +21,7 @@ namespace CryptoManager.Net.Database.Models
         public DateTime? CreateTime { get; set; }
 
         public string OrderId { get; set; } = string.Empty;
-        
+
         public int UserId { get; set; }
         public User User { get; set; } = default!;
     }

@@ -18,7 +18,7 @@ public class AssetsController : ApiController
     private readonly string[]? _enabledExchanges;
 
     public AssetsController(
-        ILogger<AssetsController> logger, 
+        ILogger<AssetsController> logger,
         IConfiguration configuration,
         TrackerContext dbContext) : base(dbContext)
     {
@@ -56,14 +56,14 @@ public class AssetsController : ApiController
             nameof(ApiAsset.ChangePercentage) => asset => asset.ChangePercentage,
             _ => throw new ArgumentException(),
         };
-        
+
         dbQuery = orderDirection == OrderDirection.Ascending
             ? dbQuery.OrderBy(order)
             : dbQuery.OrderByDescending(order);
 
         if (minUsdVolume > 0)
             dbQuery = dbQuery.Where(x => x.Volume * x.Value > minUsdVolume);
-       
+
         var total = await dbQuery.CountAsync();
         var result = await dbQuery.Skip((page - 1) * pageSize).Take(pageSize).AsNoTracking().ToListAsync();
 

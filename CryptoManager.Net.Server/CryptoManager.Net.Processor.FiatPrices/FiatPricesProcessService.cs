@@ -59,7 +59,7 @@ namespace CryptoManager.Net.Processor.FiatPrices
             {
                 await context.BulkInsertOrUpdateAsync(fiatPrices, new BulkConfig { WithHoldlock = false });
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to process Fiat prices update");
             }

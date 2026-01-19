@@ -66,7 +66,7 @@ namespace CryptoManager.Net.Publisher.FiatPrices
                     "&prettyprint=false" +
                     "&show_alternative=false");
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to request Fiat prices from API");
                 return;
@@ -74,7 +74,7 @@ namespace CryptoManager.Net.Publisher.FiatPrices
 
             var exchangeData = new PublishItem<FiatPrice>(string.Empty);
             var data = new List<FiatPrice>();
-            foreach(var symbol in result!.Rates)
+            foreach (var symbol in result!.Rates)
             {
                 data.Add(new FiatPrice
                 {

@@ -51,7 +51,7 @@ public class SymbolsController : ApiController
 
         if (!string.IsNullOrEmpty(quoteAsset))
             dbQuery = dbQuery.Where(x => x.QuoteAsset == quoteAsset);
-                
+
         if (string.IsNullOrEmpty(orderBy))
             orderBy = nameof(ExchangeSymbol.UsdVolume);
 
@@ -63,7 +63,7 @@ public class SymbolsController : ApiController
             nameof(ApiSymbol.ChangePercentage) => symbol => symbol.ChangePercentage,
             _ => throw new ArgumentException(),
         };
-        
+
         dbQuery = orderDirection == OrderDirection.Ascending
             ? dbQuery.OrderBy(order)
             : dbQuery.OrderByDescending(order);
@@ -119,7 +119,7 @@ public class SymbolsController : ApiController
             PriceStep = symbol.PriceStep,
             QuantityDecimals = symbol.QuantityDecimals,
             QuantityStep = symbol.QuantityStep,
-            
+
             SupportPlacement = client?.PlaceSpotOrderOptions.Supported == true,
             FeeAssetType = client?.SpotFeeAssetType,
             FeeDeductionType = client?.SpotFeeDeductionType,

@@ -38,7 +38,7 @@ namespace CryptoManager.Net.Auth
             var key = Encoding.ASCII.GetBytes(_configuration["JwtSecret"]!);
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(new[] { 
+                Subject = new ClaimsIdentity(new[] {
                     new Claim("id", user.Id.ToString()),
                     new Claim("email", user.Email)
                 }),

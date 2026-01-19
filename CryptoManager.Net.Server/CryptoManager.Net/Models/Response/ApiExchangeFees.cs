@@ -1,6 +1,4 @@
-﻿using CryptoExchange.Net.Objects;
-
-namespace CryptoManager.Net.Models.Response
+﻿namespace CryptoManager.Net.Models.Response
 {
     public record ApiExchangeFees
     {

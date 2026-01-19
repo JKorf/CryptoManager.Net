@@ -145,7 +145,7 @@ namespace CryptoManager.Net.Database
                 GROUP BY ub.Id, ub.Asset, ub.Total
                 ORDER BY UsdValue DESC OFFSET 0 ROWS
             ");
-           
+
         }
 
         /// <summary>

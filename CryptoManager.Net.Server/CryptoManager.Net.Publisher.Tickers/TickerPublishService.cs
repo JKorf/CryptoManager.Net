@@ -110,7 +110,7 @@ namespace CryptoManager.Net.Publisher.Tickers
             var subbedExchanges = new List<string>();
             var allTickerClients = _socketClient.GetTickersClients(TradingMode.Spot).Where(x => exchanges.Contains(x.Exchange));
 
-            foreach(var tickerClient in allTickerClients)
+            foreach (var tickerClient in allTickerClients)
             {
                 _logger.LogDebug("TickerPublishService starting all ticker for {Exchange}", tickerClient.Exchange);
                 var subResult = await tickerClient.SubscribeToAllTickersUpdatesAsync(new SubscribeAllTickersRequest(), ProcessUpdate, _stoppingToken);
@@ -122,11 +122,20 @@ namespace CryptoManager.Net.Publisher.Tickers
                 .Where(x => !subbedExchanges.Contains(x.Exchange) && exchanges.Contains(x.Exchange) && x.SubscribeTickerOptions.SupportsMultipleSymbols);
             foreach (var tickerClient in multiTickerClients)
             {
+                if (tickerClient.Exchange == "Kraken")
+                    // Kraken symbol mapping doesn't work great between REST and WebSocket, use polling instead
+                    continue;
+
                 if (!_symbols!.TryGetValue(tickerClient.Exchange, out var exchangeSymbols))
                     continue;
 
                 var offset = 0;
                 var perPage = tickerClient.SubscribeTickerOptions.MaxSymbolCount ?? exchangeSymbols.Length;
+
+#warning remove with updated Bitget.Net version
+                if (tickerClient.Exchange == "Bitget")
+                    perPage = 50;
+
                 var pages = Math.Ceiling(exchangeSymbols.Length / (double)perPage);
                 if (pages > 10)
                     // Needs more than 10 subs to subscribe to all symbols, just go with ticker
@@ -195,7 +204,7 @@ namespace CryptoManager.Net.Publisher.Tickers
             return symbols.Where(x => exchangeSymbols.Any(y => x.Name == y.Name && x.Trading)).ToArray();
         }
 
-        private void ProcessUpdate(ExchangeEvent<SharedSpotTicker> @event)
+        private void ProcessUpdate(DataEvent<SharedSpotTicker> @event)
         {
             var exchangeData = new PublishItem<Ticker>(@event.Exchange);
             var data = new Dictionary<string, Ticker>();
@@ -207,7 +216,7 @@ namespace CryptoManager.Net.Publisher.Tickers
             _ = _tickerBatcher.AddAsync(data);
         }
 
-        private void ProcessUpdate(ExchangeEvent<SharedSpotTicker[]> @event)
+        private void ProcessUpdate(DataEvent<SharedSpotTicker[]> @event)
         {
             var exchangeData = new PublishItem<Ticker>(@event.Exchange);
             var data = new Dictionary<string, Ticker>();
@@ -217,7 +226,7 @@ namespace CryptoManager.Net.Publisher.Tickers
                 {
                     continue;
                 }
-
+ 
                 var tickerOptions = _restClient.GetSpotTickerClient(@event.Exchange)!.GetSpotTickersOptions;
                 data.Add(@event.Exchange + symbol.Symbol, ParseTicker(@event.Exchange, symbol, tickerOptions.TickerType));
             }
@@ -229,7 +238,7 @@ namespace CryptoManager.Net.Publisher.Tickers
         private async Task PollAsync(List<string> exchanges)
         {
             var tickersTasks = _restClient.GetSpotTickersAsyncEnumerable(new GetTickersRequest(), exchanges, _stoppingToken);
-            await foreach(var result in tickersTasks)
+            await foreach (var result in tickersTasks)
             {
                 if (!result)
                 {

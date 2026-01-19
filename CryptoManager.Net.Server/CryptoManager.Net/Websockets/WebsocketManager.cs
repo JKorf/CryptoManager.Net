@@ -1,4 +1,5 @@
 ﻿using CryptoExchange.Net.Objects.Errors;
+using CryptoExchange.Net.Objects.Sockets;
 using CryptoExchange.Net.SharedApis;
 using CryptoManager.Net.Auth;
 using CryptoManager.Net.Data;
@@ -58,7 +59,7 @@ namespace CryptoManager.Net.Websockets
             ILogger<WebsocketManager> logger,
             IDbContextFactory<TrackerContext> dbContextFactory,
             JwtService jwtService,
-            TickerSubscriptionService tickerSubscriptionService, 
+            TickerSubscriptionService tickerSubscriptionService,
             TradeSubscriptionService tradeSubscriptionService,
             OrderBookSubscriptionService orderBookSubscriptionService,
             UserSubscriptionService userSubscriptionService)
@@ -158,7 +159,7 @@ namespace CryptoManager.Net.Websockets
             {
                 await ReadAsync(connection);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Websocket client unhandled exception during processing");
                 await SendResponseAsync(connection.Connection, null, false, "Unknown error");
@@ -200,7 +201,7 @@ namespace CryptoManager.Net.Websockets
             {
                 await SendResponseAsync(connection.Connection, message.Id, false, "Unknown action");
                 return;
-            } 
+            }
 
             if (message.Action == MessageAction.Authenticate)
             {
@@ -244,7 +245,8 @@ namespace CryptoManager.Net.Websockets
 
                 using var dbContext = _dbContextFactory.CreateDbContext();
                 var apiKeys = await dbContext.UserApiKeys.Where(x => x.UserId == userId && !x.Invalid).ToListAsync();
-                var auths = apiKeys.Select(x => new UserExchangeAuthentication {
+                var auths = apiKeys.Select(x => new UserExchangeAuthentication
+                {
                     Exchange = x.Exchange,
                     Environment = x.Environment,
                     ApiKey = x.Key,
@@ -277,9 +279,9 @@ namespace CryptoManager.Net.Websockets
 
                     await keyContext.SaveChangesAsync();
 
-                    foreach (var result in subResult.Where(x => !x.Success).GroupBy(x => x.Exchange).Select(x => x.First()))               
+                    foreach (var result in subResult.Where(x => !x.Success).GroupBy(x => x.Exchange).Select(x => x.First()))
                         SendStatusUpdate(connection.Connection, "0", StreamStatus.Interrupted, result.Exchange, result.Topic + " - " + result.Error!.Message);
-                    
+
                 });
 
                 _logger.LogDebug("Connection authenticated for user {User}", userId);
@@ -323,12 +325,12 @@ namespace CryptoManager.Net.Websockets
                 if (message.Topic == SubscriptionTopic.Trade)
                 {
                     var subResult = await _tradeSubscriptionService.SubscribeAsync(connection.Id, message.SymbolId, update => SendDataUpdate(connection.Connection, message.Id, update.Data.Select(x => new ApiTrade
-                        {
-                            Price = x.Price,
-                            Quantity = x.Quantity,
-                            Side = x.Side,
-                            Timestamp = x.Timestamp
-                        })),
+                    {
+                        Price = x.Price,
+                        Quantity = x.Quantity,
+                        Side = x.Side,
+                        Timestamp = x.Timestamp
+                    })),
                         update => SendStatusUpdate(connection.Connection, message.Id, update.Status),
                          _cts.Token);
                     await SendResponseAsync(connection.Connection, message.Id, subResult.Success, subResult.Success ? null : subResult.Error!.ToString());
@@ -346,13 +348,13 @@ namespace CryptoManager.Net.Websockets
                             QuoteVolume = x.Data.QuoteVolume,
                             Volume = x.Data.Volume,
                         }),
-                        update => SendStatusUpdate(connection.Connection, message.Id, update.Status), 
+                        update => SendStatusUpdate(connection.Connection, message.Id, update.Status),
                         _cts.Token);
                     await SendResponseAsync(connection.Connection, message.Id, subResult.Success, subResult.Success ? null : subResult.Error!.ToString());
                 }
                 else if (message.Topic == SubscriptionTopic.OrderBook)
                 {
-                    var subResult = await _orderBookSubscriptionService.SubscribeAsync(connection.Id, message.SymbolId, 
+                    var subResult = await _orderBookSubscriptionService.SubscribeAsync(connection.Id, message.SymbolId,
                         update => SendDataUpdate(connection.Connection, message.Id, new ApiBook
                         {
                             Asks = update.Data.Asks,
@@ -365,7 +367,7 @@ namespace CryptoManager.Net.Websockets
             }
         }
 
-        private void ProcessUserTradeUpdate(WebsocketConnection connection, ExchangeEvent<SharedUserTrade[]> @event)
+        private void ProcessUserTradeUpdate(WebsocketConnection connection, DataEvent<SharedUserTrade[]> @event)
         {
             _logger.LogDebug("Received user trade update for user {User}, exchange {Exchange}", connection.UserId, @event.Exchange);
             _ = _userTradeBatcher.AddAsync(@event.Data.ToDictionary(x => $"{connection.UserId}-{@event.Exchange}-{x.SharedSymbol!.BaseAsset}-{x.SharedSymbol!.QuoteAsset}-{x.Id}", x => new UserTrade
@@ -373,7 +375,7 @@ namespace CryptoManager.Net.Websockets
                 Id = $"{connection.UserId}-{@event.Exchange}-{x.SharedSymbol!.BaseAsset}-{x.SharedSymbol!.QuoteAsset}-{x.Id}",
                 Exchange = @event.Exchange,
                 SymbolId = $"{@event.Exchange}-{x.SharedSymbol!.BaseAsset}-{x.SharedSymbol!.QuoteAsset}",
-                OrderId = $"{connection.UserId}-{@event.Exchange}-{x.SharedSymbol!.BaseAsset}-{x.SharedSymbol!.QuoteAsset}-{x.OrderId}",                
+                OrderId = $"{connection.UserId}-{@event.Exchange}-{x.SharedSymbol!.BaseAsset}-{x.SharedSymbol!.QuoteAsset}-{x.OrderId}",
                 CreateTime = x.Timestamp,
                 Fee = x.Fee,
                 FeeAsset = x.FeeAsset,
@@ -386,7 +388,7 @@ namespace CryptoManager.Net.Websockets
             }));
         }
 
-        private void ProcessOrderUpdate(WebsocketConnection connection, ExchangeEvent<SharedSpotOrder[]> @event)
+        private void ProcessOrderUpdate(WebsocketConnection connection, DataEvent<SharedSpotOrder[]> @event)
         {
             _logger.LogDebug("Received order update for user {User}, exchange {Exchange}", connection.UserId, @event.Exchange);
             var trades = @event.Data.Where(x => x.LastTrade != null).Select(y => y.LastTrade!);
@@ -411,30 +413,30 @@ namespace CryptoManager.Net.Websockets
                 @event.Data.GroupBy(x => x.OrderId)
                            .Select(x => x.OrderByDescending(y => y.QuantityFilled?.QuantityInBaseAsset ?? y.QuantityFilled?.QuantityInQuoteAsset).First())
                            .ToDictionary(x => $"{connection.UserId}-{@event.Exchange}-{x.SharedSymbol!.BaseAsset}-{x.SharedSymbol!.QuoteAsset}-{x.OrderId}", x => new UserOrder
-            {
-                Id = $"{connection.UserId}-{@event.Exchange}-{x.SharedSymbol!.BaseAsset}-{x.SharedSymbol!.QuoteAsset}-{x.OrderId}",
-                Exchange = @event.Exchange,
-                SymbolId = $"{@event.Exchange}-{x.SharedSymbol!.BaseAsset}-{x.SharedSymbol!.QuoteAsset}",
-                AveragePrice = x.AveragePrice,
-                OrderId = x.OrderId,
-                Status = x.Status,
-                UpdateTime = x.UpdateTime ?? DateTime.UtcNow,
-                CreateTime = x.CreateTime ?? DateTime.UtcNow,
-                OrderPrice = x.OrderPrice,
-                OrderQuantityBase = x.OrderQuantity?.QuantityInBaseAsset,
-                OrderQuantityQuote = x.OrderQuantity?.QuantityInQuoteAsset,
-                OrderSide = x.Side,
-                OrderType = x.OrderType,
-                QuantityFilledBase = x.QuantityFilled?.QuantityInBaseAsset,
-                QuantityFilledQuote = x.QuantityFilled?.QuantityInQuoteAsset,
-                UserId = connection.UserId!.Value
-            }));
+                           {
+                               Id = $"{connection.UserId}-{@event.Exchange}-{x.SharedSymbol!.BaseAsset}-{x.SharedSymbol!.QuoteAsset}-{x.OrderId}",
+                               Exchange = @event.Exchange,
+                               SymbolId = $"{@event.Exchange}-{x.SharedSymbol!.BaseAsset}-{x.SharedSymbol!.QuoteAsset}",
+                               AveragePrice = x.AveragePrice,
+                               OrderId = x.OrderId,
+                               Status = x.Status,
+                               UpdateTime = x.UpdateTime ?? DateTime.UtcNow,
+                               CreateTime = x.CreateTime ?? DateTime.UtcNow,
+                               OrderPrice = x.OrderPrice,
+                               OrderQuantityBase = x.OrderQuantity?.QuantityInBaseAsset,
+                               OrderQuantityQuote = x.OrderQuantity?.QuantityInQuoteAsset,
+                               OrderSide = x.Side,
+                               OrderType = x.OrderType,
+                               QuantityFilledBase = x.QuantityFilled?.QuantityInBaseAsset,
+                               QuantityFilledQuote = x.QuantityFilled?.QuantityInQuoteAsset,
+                               UserId = connection.UserId!.Value
+                           }));
         }
 
-        private void ProcessBalanceUpdate(WebsocketConnection connection, ExchangeEvent<SharedBalance[]> @event)
+        private void ProcessBalanceUpdate(WebsocketConnection connection, DataEvent<SharedBalance[]> @event)
         {
             _logger.LogDebug("Received balance update for user {User}, exchange {Exchange}", connection.UserId, @event.Exchange);
-            
+
             _ = _balanceBatcher.AddAsync(@event.Data.ToDictionary(x => $"{connection.UserId}-{@event.Exchange}-{x.Asset}", x => new UserBalance
             {
                 Id = $"{connection.UserId}-{@event.Exchange}-{x.Asset}",
@@ -477,7 +479,7 @@ namespace CryptoManager.Net.Websockets
             foreach (var userUpdates in updatedOrNew.GroupBy(x => x.UserId))
             {
                 var connectionUpdates = _connections.Where(x => x.Value.UserId == userUpdates.Key).ToList();
-                foreach(var connection in connectionUpdates)
+                foreach (var connection in connectionUpdates)
                     SendAuthUpdate(connection.Value.Connection, "Balances", userUpdates.Select(x => new ApiBalance { Asset = x.Asset, Available = x.Available, Total = x.Total, Exchange = x.Exchange }));
             }
         }
@@ -488,7 +490,7 @@ namespace CryptoManager.Net.Websockets
             var context = _dbContextFactory.CreateDbContext();
             var existingOrders = await context.UserOrders.Where(x => dictionary.Keys.Contains(x.Id)).ToListAsync();
 
-            foreach(var order in dictionary)
+            foreach (var order in dictionary)
             {
                 var existingOrder = existingOrders.SingleOrDefault(x => x.Id == order.Key);
                 if (existingOrder == null)

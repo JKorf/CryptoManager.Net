@@ -20,7 +20,8 @@ namespace CryptoManager.Net.Controllers
         private readonly JwtService _jwtService;
         private readonly AuthService _authService;
 
-        public UsersController(ILogger<UsersController> logger, IConfiguration configuration, JwtService jwtService, AuthService authService, TrackerContext dbContext) : base(dbContext)         {
+        public UsersController(ILogger<UsersController> logger, IConfiguration configuration, JwtService jwtService, AuthService authService, TrackerContext dbContext) : base(dbContext)
+        {
             _logger = logger;
             _authService = authService;
             _jwtService = jwtService;

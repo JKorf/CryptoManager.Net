@@ -3,6 +3,7 @@ using CryptoClients.Net.Models;
 using CryptoExchange.Net.Authentication;
 using CryptoExchange.Net.Objects;
 using CryptoExchange.Net.Objects.Errors;
+using CryptoExchange.Net.Objects.Sockets;
 using CryptoExchange.Net.SharedApis;
 using CryptoManager.Net.Data;
 using Microsoft.Extensions.Configuration;
@@ -43,9 +44,9 @@ namespace CryptoManager.Net.Subscriptions.User
             string connectionId,
             int userId,
             IEnumerable<UserExchangeAuthentication> auths,
-            Action<ExchangeEvent<SharedBalance[]>> balanceHandler,
-            Action<ExchangeEvent<SharedSpotOrder[]>> orderHandler,
-            Action<ExchangeEvent<SharedUserTrade[]>> userTradeHandler,
+            Action<DataEvent<SharedBalance[]>> balanceHandler,
+            Action<DataEvent<SharedSpotOrder[]>> orderHandler,
+            Action<DataEvent<SharedUserTrade[]>> userTradeHandler,
             Action<SubscriptionEvent> statusHandler,
             CancellationToken ct)
         {
@@ -71,7 +72,7 @@ namespace CryptoManager.Net.Subscriptions.User
 
                 var cts = new CancellationTokenSource();
                 _subscriptions.TryAdd(userId, new UserUpdateSubscription(
-                    userId, 
+                    userId,
                     socketClient,
                     new UserCallbacks(connectionId, balanceHandler, orderHandler, userTradeHandler, statusHandler),
                     cts));
@@ -86,12 +87,13 @@ namespace CryptoManager.Net.Subscriptions.User
                 exchanges = exchanges.Where(x => !listenKeyErrors.Any(y => y.Exchange == x)).ToList();
                 var balanceResults = await socketClient.SubscribeToBalanceUpdatesAsync(new SubscribeBalancesRequest(tradingMode: TradingMode.Spot), x => HandleBalanceUpdate(userId, x), exchanges, listenKeys);
                 var invalidKeysErrors = balanceResults.Where(x => !x.Success && x.Error!.ErrorType == ErrorType.Unauthorized);
-                
+
                 exchanges = exchanges.Where(x => !invalidKeysErrors.Any(y => y.Exchange == x));
                 var spotOrderResults = await socketClient.SubscribeToSpotOrderUpdatesAsync(new SubscribeSpotOrderRequest(), x => HandleOrderUpdate(userId, x), exchanges, listenKeys);
                 var userTradeResults = await socketClient.SubscribeToUserTradeUpdatesAsync(new SubscribeUserTradeRequest(tradingMode: TradingMode.Spot), x => HandleUserTradeUpdate(userId, x), exchanges, listenKeys);
 
-                if (listenKeys.Where(x => x.Success).Select(x => x.Exchange).Any()) {
+                if (listenKeys.Where(x => x.Success).Select(x => x.Exchange).Any())
+                {
                     _ = Task.Run(async () =>
                     {
 #warning Mexc exchange has listenkey refresh event, which can't be handled automatically yet
@@ -141,7 +143,7 @@ namespace CryptoManager.Net.Subscriptions.User
                     response.Add(new SubscribeResult { Topic = "Orders", Error = sub.Error, Exchange = sub.Exchange });
                 foreach (var sub in userTradeResults)
                     response.Add(new SubscribeResult { Topic = "UserTrades", Error = sub.Error, Exchange = sub.Exchange });
-                
+
                 foreach (var result in listenKeyErrors)
                 {
                     response.Add(new SubscribeResult { Topic = "Balances", Error = result.Error, Exchange = result.Exchange });
@@ -177,19 +179,19 @@ namespace CryptoManager.Net.Subscriptions.User
                 subscription.Invoke(evnt);
         }
 
-        private void HandleBalanceUpdate(int userId, ExchangeEvent<SharedBalance[]> update)
+        private void HandleBalanceUpdate(int userId, DataEvent<SharedBalance[]> update)
         {
             if (_subscriptions.TryGetValue(userId, out var subscription))
                 subscription.Invoke(update);
         }
 
-        private void HandleOrderUpdate(int userId, ExchangeEvent<SharedSpotOrder[]> update)
+        private void HandleOrderUpdate(int userId, DataEvent<SharedSpotOrder[]> update)
         {
             if (_subscriptions.TryGetValue(userId, out var subscription))
                 subscription.Invoke(update);
         }
 
-        private void HandleUserTradeUpdate(int userId, ExchangeEvent<SharedUserTrade[]> update)
+        private void HandleUserTradeUpdate(int userId, DataEvent<SharedUserTrade[]> update)
         {
             if (_subscriptions.TryGetValue(userId, out var subscription))
                 subscription.Invoke(update);

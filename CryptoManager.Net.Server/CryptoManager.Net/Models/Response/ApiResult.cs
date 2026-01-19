@@ -23,7 +23,7 @@ namespace CryptoManager.Net.Models.Response
     {
         public T? Data { get; set; }
 
-        protected ApiResult(bool success, T? data, IEnumerable<ApiError> errors): base(success, errors)
+        protected ApiResult(bool success, T? data, IEnumerable<ApiError> errors) : base(success, errors)
         {
             Data = data;
         }
