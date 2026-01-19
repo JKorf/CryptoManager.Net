@@ -7,9 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CryptoClients.Net" Version="4.0.2" />
-    <PackageReference Include="CryptoCom.Net" Version="3.0.2" />
-    <PackageReference Include="JK.Mexc.Net" Version="4.0.1" />
+    <PackageReference Include="CryptoClients.Net" Version="4.1.1" />
   </ItemGroup>
 
   <ItemGroup>
