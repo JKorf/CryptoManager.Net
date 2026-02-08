@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CryptoClients.Net" Version="4.1.3" />
+    <PackageReference Include="CryptoClients.Net" Version="4.2.2" />
   </ItemGroup>
 
 </Project>

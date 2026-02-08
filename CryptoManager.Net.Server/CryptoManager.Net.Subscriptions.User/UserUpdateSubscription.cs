@@ -1,6 +1,7 @@
 ﻿using CryptoClients.Net.Interfaces;
 using CryptoExchange.Net.Objects.Sockets;
 using CryptoExchange.Net.SharedApis;
+using CryptoExchange.Net.Trackers.UserData.Objects;
 using CryptoManager.Net.Data;
 
 namespace CryptoManager.Net.Subscriptions.User
@@ -55,7 +56,7 @@ namespace CryptoManager.Net.Subscriptions.User
             }
         }
 
-        public void Invoke(DataEvent<SharedBalance[]> update)
+        public void Invoke(UserDataUpdate<SharedBalance[]> update)
         {
             lock (_lock)
             {
@@ -64,7 +65,7 @@ namespace CryptoManager.Net.Subscriptions.User
             }
         }
 
-        public void Invoke(DataEvent<SharedSpotOrder[]> update)
+        public void Invoke(UserDataUpdate<SharedSpotOrder[]> update)
         {
             lock (_lock)
             {
@@ -73,7 +74,7 @@ namespace CryptoManager.Net.Subscriptions.User
             }
         }
 
-        public void Invoke(DataEvent<SharedUserTrade[]> update)
+        public void Invoke(UserDataUpdate<SharedUserTrade[]> update)
         {
             lock (_lock)
             {
@@ -95,15 +96,15 @@ namespace CryptoManager.Net.Subscriptions.User
     public class UserCallbacks
     {
         public string ConnectionId { get; set; } = string.Empty;
-        public Action<DataEvent<SharedBalance[]>> BalanceCallback { get; set; }
-        public Action<DataEvent<SharedSpotOrder[]>> OrderCallback { get; set; }
-        public Action<DataEvent<SharedUserTrade[]>> UserTradeCallback { get; set; }
+        public Action<UserDataUpdate<SharedBalance[]>> BalanceCallback { get; set; }
+        public Action<UserDataUpdate<SharedSpotOrder[]>> OrderCallback { get; set; }
+        public Action<UserDataUpdate<SharedUserTrade[]>> UserTradeCallback { get; set; }
         public Action<SubscriptionEvent> StatusCallback { get; set; }
 
         public UserCallbacks(string connectionId,
-            Action<DataEvent<SharedBalance[]>> balanceCallback,
-            Action<DataEvent<SharedSpotOrder[]>> orderCallback,
-            Action<DataEvent<SharedUserTrade[]>> userTradeCallback,
+            Action<UserDataUpdate<SharedBalance[]>> balanceCallback,
+            Action<UserDataUpdate<SharedSpotOrder[]>> orderCallback,
+            Action<UserDataUpdate<SharedUserTrade[]>> userTradeCallback,
             Action<SubscriptionEvent> statusCallback)
         {
             ConnectionId = connectionId;

@@ -5,6 +5,7 @@ using CryptoExchange.Net.Objects;
 using CryptoExchange.Net.Objects.Errors;
 using CryptoExchange.Net.Objects.Sockets;
 using CryptoExchange.Net.SharedApis;
+using CryptoExchange.Net.Trackers.UserData.Objects;
 using CryptoManager.Net.Data;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -27,16 +28,19 @@ namespace CryptoManager.Net.Subscriptions.User
 
         private readonly ConcurrentDictionary<int, UserUpdateSubscription> _subscriptions = new ConcurrentDictionary<int, UserUpdateSubscription>();
         private readonly IExchangeUserClientProvider _clientProvider;
+        private readonly IExchangeTrackerFactory _trackerFactory;
         private readonly string[]? _enabledExchanges;
 
         public UserSubscriptionService(
             ILogger<UserSubscriptionService> logger,
             IConfiguration configuration,
-            IExchangeUserClientProvider clientProvider)
+            IExchangeUserClientProvider clientProvider,
+            IExchangeTrackerFactory trackerFactory)
         {
             _logger = logger;
             _clientProvider = clientProvider;
 
+            _trackerFactory = trackerFactory;
             _enabledExchanges = configuration.GetValue<string?>("EnabledExchanges")?.Split(";");
         }
 
@@ -44,9 +48,9 @@ namespace CryptoManager.Net.Subscriptions.User
             string connectionId,
             int userId,
             IEnumerable<UserExchangeAuthentication> auths,
-            Action<DataEvent<SharedBalance[]>> balanceHandler,
-            Action<DataEvent<SharedSpotOrder[]>> orderHandler,
-            Action<DataEvent<SharedUserTrade[]>> userTradeHandler,
+            Action<UserDataUpdate<SharedBalance[]>> balanceHandler,
+            Action<UserDataUpdate<SharedSpotOrder[]>> orderHandler,
+            Action<UserDataUpdate<SharedUserTrade[]>> userTradeHandler,
             Action<SubscriptionEvent> statusHandler,
             CancellationToken ct)
         {
@@ -79,83 +83,50 @@ namespace CryptoManager.Net.Subscriptions.User
 
                 var exchanges = auths.Select(x => x.Exchange);
                 if (_enabledExchanges?.Any() == true)
-                    exchanges = exchanges.Where(x => _enabledExchanges.Contains(x)).ToList();
+                    exchanges = exchanges.Where(x => _enabledExchanges.Contains(x)).ToArray();
 
-                var listenKeys = await restClient.StartListenKeysAsync(new StartListenKeyRequest(tradingMode: TradingMode.Spot), exchanges);
-                var listenKeyErrors = listenKeys.Where(x => x.Error != null).ToList();
-
-                exchanges = exchanges.Where(x => !listenKeyErrors.Any(y => y.Exchange == x)).ToList();
-                var balanceResults = await socketClient.SubscribeToBalanceUpdatesAsync(new SubscribeBalancesRequest(tradingMode: TradingMode.Spot), x => HandleBalanceUpdate(userId, x), exchanges, listenKeys);
-                var invalidKeysErrors = balanceResults.Where(x => !x.Success && x.Error!.ErrorType == ErrorType.Unauthorized);
-
-                exchanges = exchanges.Where(x => !invalidKeysErrors.Any(y => y.Exchange == x));
-                var spotOrderResults = await socketClient.SubscribeToSpotOrderUpdatesAsync(new SubscribeSpotOrderRequest(), x => HandleOrderUpdate(userId, x), exchanges, listenKeys);
-                var userTradeResults = await socketClient.SubscribeToUserTradeUpdatesAsync(new SubscribeUserTradeRequest(tradingMode: TradingMode.Spot), x => HandleUserTradeUpdate(userId, x), exchanges, listenKeys);
-
-                if (listenKeys.Where(x => x.Success).Select(x => x.Exchange).Any())
+                var trackers = _trackerFactory.CreateUserSpotDataTracker(userId.ToString(), credentials, new SpotUserDataTrackerConfig { }, environments, exchanges.ToArray());
+                foreach(var tracker in trackers)
                 {
-                    _ = Task.Run(async () =>
-                    {
-#warning Mexc exchange has listenkey refresh event, which can't be handled automatically yet
-
-                        while (!cts.IsCancellationRequested)
-                        {
-                            try
-                            {
-                                await Task.Delay(TimeSpan.FromMinutes(30), cts.Token);
-                            }
-                            catch { return; }
-
-                            _logger.LogInformation("Sending keep alive listen keys for user {UserId} on exchanges {Exchanges}", userId, listenKeys.Where(x => x.Success).Select(x => x.Exchange));
-                            var tasks = new List<Task<ExchangeWebResult<string>>>();
-                            foreach (var listenKey in listenKeys.Where(x => x.Success))
-                                tasks.Add(restClient.KeepAliveListenKeyAsync(listenKey.Exchange, new KeepAliveListenKeyRequest(listenKey.Data)));
-                            await Task.WhenAll(tasks);
-
-                            foreach (var task in tasks.Where(x => !x.Result.Success))
-                                _logger.LogWarning("Failed to keep alive listen key for user {UserId} on exchange {Exchange}: {Error}", userId, task.Result.Exchange, task.Result.Error);
-                        }
-                    });
+                    tracker.Balances.OnUpdate += (x) => HandleBalanceUpdate(userId, x);
+                    tracker.Orders.OnUpdate += (x) => HandleOrderUpdate(userId, x);
+                    tracker.Trades!.OnUpdate += (x) => HandleUserTradeUpdate(userId, x);
+                    tracker.OnConnectedChange += (type, connected) => ProcessConnectedChange(userId, tracker.Exchange, type, connected);
                 }
+                
+                var tasks = trackers.Select(x => (x.Exchange, x.StartAsync())).ToList();
+                await Task.WhenAll(tasks.Select(x => x.Item2));
 
-                foreach (var item in balanceResults.Where(x => x.Success))
-                {
-                    item.Data.ConnectionRestored += x => ProcessConnectionRestored(userId, item.Exchange);
-                    item.Data.ConnectionLost += () => ProcessConnectionLost(userId, item.Exchange);
-                }
+//                if (listenKeys.Where(x => x.Success).Select(x => x.Exchange).Any())
+//                {
+//                    _ = Task.Run(async () =>
+//                    {
+//#warning Mexc exchange has listenkey refresh event, which can't be handled automatically yet
 
-                foreach (var item in spotOrderResults.Where(x => x.Success))
-                {
-                    item.Data.ConnectionRestored += x => ProcessConnectionRestored(userId, item.Exchange);
-                    item.Data.ConnectionLost += () => ProcessConnectionLost(userId, item.Exchange);
-                }
+//                        while (!cts.IsCancellationRequested)
+//                        {
+//                            try
+//                            {
+//                                await Task.Delay(TimeSpan.FromMinutes(30), cts.Token);
+//                            }
+//                            catch { return; }
 
-                foreach (var item in userTradeResults.Where(x => x.Success))
-                {
-                    item.Data.ConnectionRestored += x => ProcessConnectionRestored(userId, item.Exchange);
-                    item.Data.ConnectionLost += () => ProcessConnectionLost(userId, item.Exchange);
-                }
+//                            _logger.LogInformation("Sending keep alive listen keys for user {UserId} on exchanges {Exchanges}", userId, listenKeys.Where(x => x.Success).Select(x => x.Exchange));
+//                            var tasks = new List<Task<ExchangeWebResult<string>>>();
+//                            foreach (var listenKey in listenKeys.Where(x => x.Success))
+//                                tasks.Add(restClient.KeepAliveListenKeyAsync(listenKey.Exchange, new KeepAliveListenKeyRequest(listenKey.Data)));
+//                            await Task.WhenAll(tasks);
+
+//                            foreach (var task in tasks.Where(x => !x.Result.Success))
+//                                _logger.LogWarning("Failed to keep alive listen key for user {UserId} on exchange {Exchange}: {Error}", userId, task.Result.Exchange, task.Result.Error);
+//                        }
+//                    });
+//                }
+
 
                 var response = new List<SubscribeResult>();
-                foreach (var sub in balanceResults)
-                    response.Add(new SubscribeResult { Topic = "Balances", Error = sub.Error, Exchange = sub.Exchange });
-                foreach (var sub in spotOrderResults)
-                    response.Add(new SubscribeResult { Topic = "Orders", Error = sub.Error, Exchange = sub.Exchange });
-                foreach (var sub in userTradeResults)
-                    response.Add(new SubscribeResult { Topic = "UserTrades", Error = sub.Error, Exchange = sub.Exchange });
-
-                foreach (var result in listenKeyErrors)
-                {
-                    response.Add(new SubscribeResult { Topic = "Balances", Error = result.Error, Exchange = result.Exchange });
-                    response.Add(new SubscribeResult { Topic = "Orders", Error = result.Error, Exchange = result.Exchange });
-                    response.Add(new SubscribeResult { Topic = "UserTrades", Error = result.Error, Exchange = result.Exchange });
-                }
-
-                foreach (var result in invalidKeysErrors)
-                {
-                    response.Add(new SubscribeResult { Topic = "Orders", Error = result.Error, Exchange = result.Exchange });
-                    response.Add(new SubscribeResult { Topic = "UserTrades", Error = result.Error, Exchange = result.Exchange });
-                }
+                foreach(var item in tasks)
+                    response.Add(new SubscribeResult() { Error = item.Item2.Result.Error, Exchange = item.Exchange });
 
                 _logger.LogDebug("User subscription for user {UserId} connected", userId);
                 return response.ToArray();
@@ -166,37 +137,30 @@ namespace CryptoManager.Net.Subscriptions.User
             }
         }
 
-        private void ProcessConnectionRestored(int userId, string exchange)
+        private void ProcessConnectedChange(int userId, string exchange, UserDataType type, bool connected)
         {
-            var evnt = new SubscriptionEvent(StreamStatus.Restored) { Exchange = exchange };
-            if (_subscriptions.TryGetValue(userId, out var subscription))
-                subscription.Invoke(evnt);
-        }
-        private void ProcessConnectionLost(int userId, string exchange)
-        {
-            var evnt = new SubscriptionEvent(StreamStatus.Interrupted) { Exchange = exchange };
+            var evnt = new SubscriptionEvent(connected ? StreamStatus.Restored : StreamStatus.Interrupted) { Exchange = exchange };
             if (_subscriptions.TryGetValue(userId, out var subscription))
                 subscription.Invoke(evnt);
         }
 
-        private void HandleBalanceUpdate(int userId, DataEvent<SharedBalance[]> update)
+        private async Task HandleBalanceUpdate(int userId, UserDataUpdate<SharedBalance[]> update)
         {
             if (_subscriptions.TryGetValue(userId, out var subscription))
                 subscription.Invoke(update);
         }
 
-        private void HandleOrderUpdate(int userId, DataEvent<SharedSpotOrder[]> update)
+        private async Task HandleOrderUpdate(int userId, UserDataUpdate<SharedSpotOrder[]> update)
         {
             if (_subscriptions.TryGetValue(userId, out var subscription))
                 subscription.Invoke(update);
         }
 
-        private void HandleUserTradeUpdate(int userId, DataEvent<SharedUserTrade[]> update)
+        private async Task HandleUserTradeUpdate(int userId, UserDataUpdate<SharedUserTrade[]> update)
         {
             if (_subscriptions.TryGetValue(userId, out var subscription))
                 subscription.Invoke(update);
         }
-
 
         public async Task UnsubscribeAsync(int userId, string connectionId)
         {

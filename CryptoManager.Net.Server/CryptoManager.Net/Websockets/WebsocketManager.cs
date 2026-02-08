@@ -1,6 +1,7 @@
 ﻿using CryptoExchange.Net.Objects.Errors;
 using CryptoExchange.Net.Objects.Sockets;
 using CryptoExchange.Net.SharedApis;
+using CryptoExchange.Net.Trackers.UserData.Objects;
 using CryptoManager.Net.Auth;
 using CryptoManager.Net.Data;
 using CryptoManager.Net.Database;
@@ -261,9 +262,9 @@ namespace CryptoManager.Net.Websockets
                         connection.Id,
                         userId,
                         auths,
-                        x => ProcessBalanceUpdate(connection, x),
-                        x => ProcessOrderUpdate(connection, x),
-                        x => ProcessUserTradeUpdate(connection, x),
+                        async x => await ProcessBalanceUpdate(connection, x),
+                        async x => await ProcessOrderUpdate(connection, x),
+                        async x => await ProcessUserTradeUpdate(connection, x),
                         x => SendStatusUpdate(connection.Connection, "0", x.Status, x.Exchange),
                         _cts.Token);
 
@@ -367,10 +368,10 @@ namespace CryptoManager.Net.Websockets
             }
         }
 
-        private void ProcessUserTradeUpdate(WebsocketConnection connection, DataEvent<SharedUserTrade[]> @event)
+        private async Task ProcessUserTradeUpdate(WebsocketConnection connection, UserDataUpdate<SharedUserTrade[]> @event)
         {
             _logger.LogDebug("Received user trade update for user {User}, exchange {Exchange}", connection.UserId, @event.Exchange);
-            _ = _userTradeBatcher.AddAsync(@event.Data.ToDictionary(x => $"{connection.UserId}-{@event.Exchange}-{x.SharedSymbol!.BaseAsset}-{x.SharedSymbol!.QuoteAsset}-{x.Id}", x => new UserTrade
+            await _userTradeBatcher.AddAsync(@event.Data.ToDictionary(x => $"{connection.UserId}-{@event.Exchange}-{x.SharedSymbol!.BaseAsset}-{x.SharedSymbol!.QuoteAsset}-{x.Id}", x => new UserTrade
             {
                 Id = $"{connection.UserId}-{@event.Exchange}-{x.SharedSymbol!.BaseAsset}-{x.SharedSymbol!.QuoteAsset}-{x.Id}",
                 Exchange = @event.Exchange,
@@ -388,11 +389,11 @@ namespace CryptoManager.Net.Websockets
             }));
         }
 
-        private void ProcessOrderUpdate(WebsocketConnection connection, DataEvent<SharedSpotOrder[]> @event)
+        private async Task ProcessOrderUpdate(WebsocketConnection connection, UserDataUpdate<SharedSpotOrder[]> @event)
         {
             _logger.LogDebug("Received order update for user {User}, exchange {Exchange}", connection.UserId, @event.Exchange);
             var trades = @event.Data.Where(x => x.LastTrade != null).Select(y => y.LastTrade!);
-            _ = _userTradeBatcher.AddAsync(trades.ToDictionary(x => $"{connection.UserId}-{@event.Exchange}-{x.SharedSymbol!.BaseAsset}-{x.SharedSymbol!.QuoteAsset}-{x.Id}", x => new UserTrade
+            await _userTradeBatcher.AddAsync(trades.ToDictionary(x => $"{connection.UserId}-{@event.Exchange}-{x.SharedSymbol!.BaseAsset}-{x.SharedSymbol!.QuoteAsset}-{x.Id}", x => new UserTrade
             {
                 Id = $"{connection.UserId}-{@event.Exchange}-{x.SharedSymbol!.BaseAsset}-{x.SharedSymbol!.QuoteAsset}-{x.Id}",
                 Exchange = @event.Exchange,
@@ -409,7 +410,7 @@ namespace CryptoManager.Net.Websockets
                 Side = x.Side
             }));
 
-            _ = _orderBatcher.AddAsync(
+            await _orderBatcher.AddAsync(
                 @event.Data.GroupBy(x => x.OrderId)
                            .Select(x => x.OrderByDescending(y => y.QuantityFilled?.QuantityInBaseAsset ?? y.QuantityFilled?.QuantityInQuoteAsset).First())
                            .ToDictionary(x => $"{connection.UserId}-{@event.Exchange}-{x.SharedSymbol!.BaseAsset}-{x.SharedSymbol!.QuoteAsset}-{x.OrderId}", x => new UserOrder
@@ -433,11 +434,11 @@ namespace CryptoManager.Net.Websockets
                            }));
         }
 
-        private void ProcessBalanceUpdate(WebsocketConnection connection, DataEvent<SharedBalance[]> @event)
+        private async Task ProcessBalanceUpdate(WebsocketConnection connection, UserDataUpdate<SharedBalance[]> @event)
         {
             _logger.LogDebug("Received balance update for user {User}, exchange {Exchange}", connection.UserId, @event.Exchange);
 
-            _ = _balanceBatcher.AddAsync(@event.Data.ToDictionary(x => $"{connection.UserId}-{@event.Exchange}-{x.Asset}", x => new UserBalance
+            await _balanceBatcher.AddAsync(@event.Data.ToDictionary(x => $"{connection.UserId}-{@event.Exchange}-{x.Asset}", x => new UserBalance
             {
                 Id = $"{connection.UserId}-{@event.Exchange}-{x.Asset}",
                 Asset = x.Asset,
