@@ -112,6 +112,9 @@ namespace CryptoManager.Net.Subscriptions.Trades
 
         public async Task UnsubscribeAsync(string connectionId, string symbolId)
         {
+            if (!_symbolSemaphores.ContainsKey(symbolId))
+                return;
+
             var semaphore = _symbolSemaphores[symbolId];
             await semaphore.WaitAsync();
             try

@@ -97,33 +97,6 @@ namespace CryptoManager.Net.Subscriptions.User
                 var tasks = trackers.Select(x => (x.Exchange, x.StartAsync())).ToList();
                 await Task.WhenAll(tasks.Select(x => x.Item2));
 
-//                if (listenKeys.Where(x => x.Success).Select(x => x.Exchange).Any())
-//                {
-//                    _ = Task.Run(async () =>
-//                    {
-//#warning Mexc exchange has listenkey refresh event, which can't be handled automatically yet
-
-//                        while (!cts.IsCancellationRequested)
-//                        {
-//                            try
-//                            {
-//                                await Task.Delay(TimeSpan.FromMinutes(30), cts.Token);
-//                            }
-//                            catch { return; }
-
-//                            _logger.LogInformation("Sending keep alive listen keys for user {UserId} on exchanges {Exchanges}", userId, listenKeys.Where(x => x.Success).Select(x => x.Exchange));
-//                            var tasks = new List<Task<ExchangeWebResult<string>>>();
-//                            foreach (var listenKey in listenKeys.Where(x => x.Success))
-//                                tasks.Add(restClient.KeepAliveListenKeyAsync(listenKey.Exchange, new KeepAliveListenKeyRequest(listenKey.Data)));
-//                            await Task.WhenAll(tasks);
-
-//                            foreach (var task in tasks.Where(x => !x.Result.Success))
-//                                _logger.LogWarning("Failed to keep alive listen key for user {UserId} on exchange {Exchange}: {Error}", userId, task.Result.Exchange, task.Result.Error);
-//                        }
-//                    });
-//                }
-
-
                 var response = new List<SubscribeResult>();
                 foreach(var item in tasks)
                     response.Add(new SubscribeResult() { Error = item.Item2.Result.Error, Exchange = item.Exchange });
@@ -164,6 +137,9 @@ namespace CryptoManager.Net.Subscriptions.User
 
         public async Task UnsubscribeAsync(int userId, string connectionId)
         {
+            if (!_userSemaphores.ContainsKey(userId))
+                return;
+
             var semaphore = _userSemaphores[userId];
             await semaphore.WaitAsync();
             try
