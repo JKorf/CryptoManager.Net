@@ -72,19 +72,26 @@ namespace CryptoManager.Net.Publisher.Tickers
 
             _logger.LogInformation("TickerPublishService {SubCount} exchange subscribed, starting polling for {PollCount}", subscribedExchanges.Count, pollingExchanges.Count);
 
-            // For remaining exchanges use polling
+            // For remaining exchanges use polling            
             while (!_stoppingToken.IsCancellationRequested)
             {
-                var sw = Stopwatch.StartNew();
-                await PollAsync(pollingExchanges);
+                try
+                {
+                    var sw = Stopwatch.StartNew();
+                    await PollAsync(pollingExchanges);
 
-                var waitTime = TimeSpan.FromMinutes(_pollInterval);
-                waitTime = waitTime.Add(-sw.Elapsed);
-                if (waitTime < TimeSpan.FromMilliseconds(1))
-                    waitTime = TimeSpan.FromMilliseconds(1);
+                    var waitTime = TimeSpan.FromMinutes(_pollInterval);
+                    waitTime = waitTime.Add(-sw.Elapsed);
+                    if (waitTime < TimeSpan.FromMilliseconds(1))
+                        waitTime = TimeSpan.FromMilliseconds(1);
 
-                try { await Task.Delay(waitTime, _stoppingToken); } catch { }
-            }
+                    try { await Task.Delay(waitTime, _stoppingToken); } catch { }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "TickerPublishService polling loop exception");
+                }
+            }            
 
             await _tickerBatcher.StopAsync();
             _logger.LogDebug("TickerPublishService stopped");
@@ -271,7 +278,7 @@ namespace CryptoManager.Net.Publisher.Tickers
 
                     data.Add(result.Exchange + symbol.Symbol, ParseTicker(result.Exchange, symbol, tickerOptions.TickerType));
                 }
-                _ = _tickerBatcher.AddAsync(data);
+                await _tickerBatcher.AddAsync(data);
             }
         }
 
