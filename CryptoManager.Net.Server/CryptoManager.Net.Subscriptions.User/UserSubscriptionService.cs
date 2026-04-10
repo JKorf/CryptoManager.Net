@@ -69,8 +69,8 @@ namespace CryptoManager.Net.Subscriptions.User
                 }
 
                 var environments = auths.ToDictionary(x => x.Exchange, x => x.Environment);
-                var credentials = new ExchangeCredentials(auths.ToDictionary(x => x.Exchange, x => new ApiCredentials(x.ApiKey, x.ApiSecret, x.ApiPass)));
-
+                var credentials = ExchangeCredentials.CreateFrom(auths.ToDictionary(x => x.Exchange, x => ExchangeCredentials.CreateCredentialsForExchange(x.Exchange,
+                    new DynamicCredentials(TradingMode.Spot, x.ApiKey, x.ApiSecret, x.ApiPass))));
                 var restClient = _clientProvider.GetRestClient(userId.ToString(), credentials, environments);
                 var socketClient = _clientProvider.GetSocketClient(userId.ToString(), credentials, environments);
 

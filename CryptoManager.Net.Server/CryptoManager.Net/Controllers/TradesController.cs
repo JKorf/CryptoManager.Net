@@ -88,8 +88,14 @@ namespace CryptoManager.Net.Controllers
                 return ApiResult.Error(ApiErrors.NoApiKeyConfigured);
 
             var environments = new Dictionary<string, string?>() { { apiKey.Exchange, apiKey.Environment } };
-            var credentials = new Dictionary<string, ApiCredentials>() { { apiKey.Exchange, new ApiCredentials(apiKey.Key, apiKey.Secret, apiKey.Pass) } };
-            var client = _clientProvider.GetRestClient(UserId.ToString(), new ExchangeCredentials(credentials), environments);
+            var credentials = new Dictionary<string, ApiCredentials>()
+            {
+                {
+                    apiKey.Exchange,
+                    ExchangeCredentials.CreateCredentialsForExchange(apiKey.Exchange, new DynamicCredentials(TradingMode.Spot, apiKey.Key, apiKey.Secret, apiKey.Pass))
+                }
+            };
+            var client = _clientProvider.GetRestClient(UserId.ToString(), ExchangeCredentials.CreateFrom(credentials), environments);
 
             ExchangeWebResult<SharedUserTrade[]> userTrades;
             if (!string.IsNullOrEmpty(orderId))

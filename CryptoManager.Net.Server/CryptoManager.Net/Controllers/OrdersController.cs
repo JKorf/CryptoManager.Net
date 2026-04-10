@@ -6,6 +6,7 @@ using CryptoExchange.Net.Objects.Errors;
 using CryptoExchange.Net.SharedApis;
 using CryptoManager.Net.Caching;
 using CryptoManager.Net.Database;
+using CryptoManager.Net.Database.Migrations;
 using CryptoManager.Net.Database.Models;
 using CryptoManager.Net.Models.Requests;
 using CryptoManager.Net.Models.Response;
@@ -149,8 +150,14 @@ namespace CryptoManager.Net.Controllers
                 return ApiResult.Error(ApiErrors.NoApiKeyConfigured);
 
             var environments = new Dictionary<string, string?>() { { apiKey.Exchange, apiKey.Environment } };
-            var credentials = new Dictionary<string, ApiCredentials>() { { apiKey.Exchange, new ApiCredentials(apiKey.Key, apiKey.Secret, apiKey.Pass) } };
-            var client = _clientProvider.GetRestClient(UserId.ToString()!, new ExchangeCredentials(credentials), environments);
+            var credentials = new Dictionary<string, ApiCredentials>()
+            {
+                {
+                    apiKey.Exchange,
+                    ExchangeCredentials.CreateCredentialsForExchange(apiKey.Exchange, new DynamicCredentials(TradingMode.Spot, apiKey.Key, apiKey.Secret, apiKey.Pass))
+                }
+            };
+            var client = _clientProvider.GetRestClient(UserId.ToString(), ExchangeCredentials.CreateFrom(credentials), environments);
 
             var price = request.LimitPrice;
             var orderClient = client.GetSpotOrderClient(symbolData[0]);
@@ -191,8 +198,9 @@ namespace CryptoManager.Net.Controllers
             var apiKeys = await _dbContext.UserApiKeys.Where(x => x.UserId == UserId && !x.Invalid && x.Exchange == order.Exchange).ToListAsync();
 
             var environments = apiKeys.ToDictionary(x => x.Exchange, x => (string?)x.Environment);
-            var credentials = apiKeys.ToDictionary(x => x.Exchange, x => new ApiCredentials(x.Key, x.Secret, x.Pass));
-            var client = _clientProvider.GetRestClient(UserId.ToString()!, new ExchangeCredentials(credentials), environments);
+            var credentials = apiKeys.ToDictionary(x => x.Exchange, x => ExchangeCredentials.CreateCredentialsForExchange(x.Exchange,
+                new DynamicCredentials(TradingMode.Spot, x.Key, x.Secret, x.Pass)));
+            var client = _clientProvider.GetRestClient(UserId.ToString(), ExchangeCredentials.CreateFrom(credentials), environments);
 
             var symbolData = order.SymbolId.Split("-");
             var sharedSymbol = new SharedSymbol(TradingMode.Spot, symbolData[1], symbolData[2]);
@@ -246,8 +254,9 @@ namespace CryptoManager.Net.Controllers
                 return ApiResult.Error(ApiErrors.NoApiKeyConfigured);
 
             var environments = apiKeys.ToDictionary(x => x.Exchange, x => (string?)x.Environment);
-            var credentials = apiKeys.ToDictionary(x => x.Exchange, x => new ApiCredentials(x.Key, x.Secret, x.Pass));
-            var client = _clientProvider.GetRestClient(UserId.ToString()!, new ExchangeCredentials(credentials), environments);
+            var credentials = apiKeys.ToDictionary(x => x.Exchange, x => ExchangeCredentials.CreateCredentialsForExchange(x.Exchange,
+                new DynamicCredentials(TradingMode.Spot, x.Key, x.Secret, x.Pass)));
+            var client = _clientProvider.GetRestClient(UserId.ToString(), ExchangeCredentials.CreateFrom(credentials), environments);
 
             ExchangeWebResult<SharedSpotOrder[]>[] orders;
             if (symbolData == null)
@@ -289,8 +298,9 @@ namespace CryptoManager.Net.Controllers
 
             var exchanges = apiKeys.Select(x => x.Exchange);
             var environments = apiKeys.ToDictionary(x => x.Exchange, x => x.Environment);
-            var credentials = apiKeys.ToDictionary(x => x.Exchange, x => new ApiCredentials(x.Key, x.Secret, x.Pass));
-            var client = _clientProvider.GetRestClient(UserId.ToString()!, new ExchangeCredentials(credentials), environments);
+            var credentials = apiKeys.ToDictionary(x => x.Exchange, x => ExchangeCredentials.CreateCredentialsForExchange(x.Exchange,
+                new DynamicCredentials(TradingMode.Spot, x.Key, x.Secret, x.Pass)));
+            var client = _clientProvider.GetRestClient(UserId.ToString(), ExchangeCredentials.CreateFrom(credentials), environments);
 
             var symbol = new SharedSymbol(TradingMode.Spot, baseAsset, quoteAsset);
             var closedOrders = await client.GetSpotClosedOrdersAsync(new GetClosedOrdersRequest(symbol), exchanges);

@@ -143,8 +143,9 @@ public class ExchangesController : ApiController
             return ApiResult<ApiExchangeFees>.Error(ApiErrors.NoApiKeyConfigured);
 
         var environments = apiKeys.ToDictionary(x => x.Exchange, x => (string?)x.Environment);
-        var credentials = apiKeys.ToDictionary(x => x.Exchange, x => new ApiCredentials(x.Key, x.Secret, x.Pass));
-        var client = _clientProvider.GetRestClient(UserId.ToString(), new ExchangeCredentials(credentials), environments);
+        var credentials = apiKeys.ToDictionary(x => x.Exchange, x => ExchangeCredentials.CreateCredentialsForExchange(x.Exchange,
+                new DynamicCredentials(TradingMode.Spot, x.Key, x.Secret, x.Pass)));
+        var client = _clientProvider.GetRestClient(UserId.ToString(), ExchangeCredentials.CreateFrom(credentials), environments);
 
         var feeClient = client.GetFeeClient(TradingMode.Spot, exchange);
         if (feeClient == null)
