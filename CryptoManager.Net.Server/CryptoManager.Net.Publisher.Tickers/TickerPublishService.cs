@@ -70,7 +70,7 @@ namespace CryptoManager.Net.Publisher.Tickers
             if (_enabledExchanges?.Any() == true)
                 pollingExchanges = pollingExchanges.Where(x => _enabledExchanges.Contains(x)).ToList();
 
-            _logger.LogInformation("TickerPublishService {SubCount} exchange subscribed, starting polling for {PollCount}", subscribedExchanges.Count, pollingExchanges.Count);
+            _logger.LogInformation("TickerPublishService {SubCount} exchanges subscribed, starting polling for {PollCount}", subscribedExchanges.Count, pollingExchanges.Count);
 
             // For remaining exchanges use polling            
             while (!_stoppingToken.IsCancellationRequested)
@@ -119,7 +119,7 @@ namespace CryptoManager.Net.Publisher.Tickers
 
             foreach (var tickerClient in allTickerClients)
             {
-                _logger.LogDebug("TickerPublishService starting all ticker for {Exchange}", tickerClient.Exchange);
+                _logger.LogDebug("TickerPublishService starting subscription for all tickers for {Exchange}", tickerClient.Exchange);
                 var subResult = await tickerClient.SubscribeToAllTickersUpdatesAsync(new SubscribeAllTickersRequest(), ProcessUpdate, _stoppingToken);
                 if (subResult)
                 {
@@ -148,7 +148,7 @@ namespace CryptoManager.Net.Publisher.Tickers
                     continue;
 
                 var exchangeSubs = new List<UpdateSubscription>();
-                _logger.LogDebug("TickerPublishService starting batched ticker for {Exchange} in {Pages} batches", tickerClient.Exchange, pages);
+                _logger.LogDebug("TickerPublishService starting subscription for batched tickers for {Exchange} in {Pages} batches", tickerClient.Exchange, pages);
                 var success = true;
                 for (var i = 0; i < pages; i++)
                 {
