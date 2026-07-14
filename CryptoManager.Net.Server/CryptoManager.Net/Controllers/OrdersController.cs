@@ -2,6 +2,7 @@
 using CryptoClients.Net.Models;
 using CryptoExchange.Net;
 using CryptoExchange.Net.Authentication;
+using CryptoExchange.Net.Objects;
 using CryptoExchange.Net.Objects.Errors;
 using CryptoExchange.Net.SharedApis;
 using CryptoManager.Net.Caching;
@@ -161,7 +162,7 @@ namespace CryptoManager.Net.Controllers
 
             var price = request.LimitPrice;
             var orderClient = client.GetSpotOrderClient(symbolData[0]);
-            if (price == null && orderClient!.PlaceSpotOrderOptions.RequiredOptionalParameters.Any(x => x.Name == nameof(PlaceSpotOrderRequest.Price)))
+            if (price == null && orderClient!.PlaceSpotOrderOptions.RequiredOptionalParameters.Any(x => x.Names.Contains(nameof(PlaceSpotOrderRequest.Price))))
             {
                 // Some exchanges require a price to be sent even for market orders so they can calculate a slippage and simulate a market order even 
                 // if the exchange doesn't directly support it
@@ -179,7 +180,7 @@ namespace CryptoManager.Net.Controllers
                     price,
                     request.OrderType == SharedOrderType.LimitMaker ? null : request.TimeInForce));
 
-            if (!result)
+            if (!result.Success)
                 return ApiResult.Error(result.Error!.ErrorType, result.Error.ErrorCode, result.Error.Message);
 
             return ApiResult.Ok();
@@ -205,7 +206,7 @@ namespace CryptoManager.Net.Controllers
             var symbolData = order.SymbolId.Split("-");
             var sharedSymbol = new SharedSymbol(TradingMode.Spot, symbolData[1], symbolData[2]);
             var result = await client.CancelSpotOrderAsync(symbolData[0], new CancelOrderRequest(sharedSymbol, order.OrderId));
-            if (!result)
+            if (!result.Success)
                 return ApiResult.Error(result.Error!.ErrorType, result.Error!.ErrorCode, result.Error.Message);
 
             return ApiResult.Ok();
@@ -258,13 +259,13 @@ namespace CryptoManager.Net.Controllers
                 new DynamicCredentials(TradingMode.Spot, x.Key, x.Secret, x.Pass)));
             var client = _clientProvider.GetRestClient(UserId.ToString(), ExchangeCredentials.CreateFrom(credentials), environments);
 
-            ExchangeWebResult<SharedSpotOrder[]>[] orders;
+            HttpResult<SharedSpotOrder[]>[] orders;
             if (symbolData == null)
             {
                 // Filter out any clients for which the symbol parameter is required since we don't have it
                 var exchanges = apiKeys.Select(x => x.Exchange).ToList();
                 var orderClients = client.GetSpotOrderClients().Where(x => exchanges.Contains(x.Exchange)).ToList();
-                foreach (var symbolIdRequiredClient in orderClients.Where(x => x.GetOpenSpotOrdersOptions.RequiredOptionalParameters.Any(x => x.Name == nameof(GetOpenOrdersRequest.Symbol))))
+                foreach (var symbolIdRequiredClient in orderClients.Where(x => x.GetOpenSpotOrdersOptions.RequiredOptionalParameters.Any(x => x.Names.Contains(nameof(GetOpenOrdersRequest.Symbol)))))
                     exchanges.Remove(symbolIdRequiredClient.Exchange);
 
                 orders = await client.GetSpotOpenOrdersAsync(new GetOpenOrdersRequest(), exchanges);
@@ -275,7 +276,7 @@ namespace CryptoManager.Net.Controllers
             }
 
 #warning If open orders doesn't return an order we currently have as open we should close it
-            var dbOrders = orders.Where(x => x.Success).SelectMany(x => x.Data.Select(y => ParseOrder(x.Exchange, y))).ToArray();
+            var dbOrders = orders.Where(x => x.Success).SelectMany(x => x.Data!.Select(y => ParseOrder(x.Exchange, y))).ToArray();
             await _dbContext.BulkInsertOrUpdateAsync(dbOrders, new BulkConfig { WithHoldlock = false });
 
 #warning Ignore errors here because they're probably because of symbol not existing. Should first check if the symbol exists on the exchange
@@ -305,7 +306,7 @@ namespace CryptoManager.Net.Controllers
             var symbol = new SharedSymbol(TradingMode.Spot, baseAsset, quoteAsset);
             var closedOrders = await client.GetSpotClosedOrdersAsync(new GetClosedOrdersRequest(symbol), exchanges);
 
-            var dbOrders = closedOrders.Where(x => x.Success).SelectMany(y => y.Data.Select(x => ParseOrder(y.Exchange, x)));
+            var dbOrders = closedOrders.Where(x => x.Success).SelectMany(y => y.Data!.Select(x => ParseOrder(y.Exchange, x)));
             // Want to update full?
             // Maybe keep a track of until what timestamp a users order history is fully synced so a new update can request up to that point?
             await _dbContext.BulkInsertOrUpdateAsync(dbOrders, new BulkConfig { WithHoldlock = false });

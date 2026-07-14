@@ -41,7 +41,7 @@ namespace CryptoManager.Net.Subscriptions.Trades
             var symbolData = symbolId.Split("-");
             var client = _socketClient.GetTradeClient(TradingMode.Spot, symbolData[0]);
             if (client == null)
-                return new CallResult(ArgumentError.Invalid(symbolId, $"No Trade subscription client available for {symbolData[0]}"));
+                return CallResult.Fail(ArgumentError.Invalid(symbolId, $"No Trade subscription client available for {symbolData[0]}"));
 
             var semaphore = _symbolSemaphores.GetOrAdd(symbolId, x => new SemaphoreSlim(1, 1));
             await semaphore.WaitAsync();
@@ -56,7 +56,7 @@ namespace CryptoManager.Net.Subscriptions.Trades
                 if (connectionSubs.TryGetValue(symbolId, out _))
                 {
                     _logger.LogInformation("Connection already has a Trade subscription for {Symbol}", symbolId);
-                    return CallResult.SuccessResult;
+                    return CallResult.Ok();
                 }
 
 
@@ -66,15 +66,15 @@ namespace CryptoManager.Net.Subscriptions.Trades
                 {
                     existingSub.SubscriptionCount++;
                     _logger.LogInformation("Adding callback to existing Trade subscription for {Symbol}, now {SubsOnSymbol}. {TotalSubs} Trade subscriptions for {DiffSubs} different symbols in total", symbolId, existingSub.SubscriptionCount, _connectionSubscriptions.Sum(x => x.Value.Count), _updateSubscriptions.Count);
-                    return CallResult.SuccessResult;
+                    return CallResult.Ok();
                 }
 
                 _logger.LogInformation("Subscribing to Trade updates for {Symbol}", symbolId);
                 var subscription = await client.SubscribeToTradeUpdatesAsync(new SubscribeTradeRequest(new SharedSymbol(TradingMode.Spot, symbolData[1], symbolData[2])), update => ProcessUpdate(symbolId, update));
-                if (!subscription)
+                if (!subscription.Success)
                 {
                     _logger.LogWarning("Failed to subscribe Trade for {Symbol}: {Error}", symbolId, subscription.Error!.ToString());
-                    return new CallResult(subscription.Error);
+                    return CallResult.Fail(subscription.Error);
                 }
 
                 subscription.Data.ConnectionLost += () => ProcessConnectionLost(symbolId);
@@ -88,7 +88,7 @@ namespace CryptoManager.Net.Subscriptions.Trades
                 semaphore.Release();
             }
 
-            return CallResult.SuccessResult;
+            return CallResult.Ok();
         }
 
         private void ProcessConnectionRestored(string symbolId)

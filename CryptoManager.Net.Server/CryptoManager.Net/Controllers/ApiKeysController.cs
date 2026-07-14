@@ -1,5 +1,7 @@
 ﻿using CryptoClients.Net;
+using CryptoClients.Net.Enums;
 using CryptoClients.Net.Interfaces;
+using CryptoClients.Net.Models;
 using CryptoExchange.Net.Objects;
 using CryptoExchange.Net.Objects.Errors;
 using CryptoExchange.Net.SharedApis;
@@ -7,6 +9,7 @@ using CryptoManager.Net.ApiModels.Requests;
 using CryptoManager.Net.Database;
 using CryptoManager.Net.Database.Models;
 using CryptoManager.Net.Models.Response;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
@@ -98,7 +101,7 @@ namespace CryptoManager.Net.Controllers
 
             var environments = new Dictionary<string, string?> { { existingKey.Exchange, existingKey.Environment } };
             var client = new ExchangeRestClient(options => options.ApiEnvironments = environments);
-            client.SetApiCredentials(existingKey.Exchange, existingKey.Key, existingKey.Secret, existingKey.Pass);
+            client.SetApiCredentials(existingKey.Exchange, new DynamicCredentials(TradingMode.Spot, existingKey.Key, existingKey.Secret, existingKey.Pass));
 
             var balanceClient = client.GetBalancesClient(TradingMode.Spot, existingKey.Exchange);
             if (balanceClient == null)
@@ -124,7 +127,7 @@ namespace CryptoManager.Net.Controllers
             var client = new ExchangeRestClient(options => options.ApiEnvironments = new Dictionary<string, string?> { { exchange, environment } });
             try
             {
-                client.SetApiCredentials(exchange, apiKey, apiSecret, apiPass);
+                client.SetApiCredentials(exchange, new DynamicCredentials(TradingMode.Spot, apiKey, apiSecret, apiPass));
             }
             catch (ArgumentException aex)
             {

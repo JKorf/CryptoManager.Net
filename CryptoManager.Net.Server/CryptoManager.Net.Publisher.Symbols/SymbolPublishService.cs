@@ -60,7 +60,7 @@ namespace CryptoManager.Net.Publisher.Symbols
 
             foreach (var result in symbolsTasks.Result)
             {
-                if (!result)
+                if (!result.Success)
                 {
                     // TODO someway to publish errors
                     _logger.LogError("Failed to request symbols from exchange {Exchange}: {Error}", result.Exchange, result.Error!.ToString());

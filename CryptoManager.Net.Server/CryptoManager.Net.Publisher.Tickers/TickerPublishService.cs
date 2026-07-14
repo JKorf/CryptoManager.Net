@@ -121,7 +121,7 @@ namespace CryptoManager.Net.Publisher.Tickers
             {
                 _logger.LogDebug("TickerPublishService starting subscription for all tickers for {Exchange}", tickerClient.Exchange);
                 var subResult = await tickerClient.SubscribeToAllTickersUpdatesAsync(new SubscribeAllTickersRequest(), ProcessUpdate, _stoppingToken);
-                if (subResult)
+                if (subResult.Success)
                 {
                     AttachEventHandler(subResult.Data, $"{tickerClient.Exchange}.AllTickers");
                     subbedExchanges.Add(subResult.Exchange);
@@ -154,7 +154,7 @@ namespace CryptoManager.Net.Publisher.Tickers
                 {
                     var symbols = exchangeSymbols[offset..(offset + perPage)];
                     var subResult = await SubscribeToTickersAsync(tickerClient, symbols, i);
-                    if (!subResult)
+                    if (!subResult.Success)
                     {
                         await Task.WhenAll(exchangeSubs.Select(x => x.CloseAsync()));
                         success = false;
@@ -183,10 +183,10 @@ namespace CryptoManager.Net.Publisher.Tickers
             subscription.Exception += ex => _logger.LogError(ex, "Subscription {Topic} exception", topic);
         }
 
-        private async Task<ExchangeResult<UpdateSubscription>> SubscribeToTickersAsync(ITickerSocketClient tickerClient, SharedSpotSymbol[] symbols, int setNumber)
+        private async Task<WebSocketResult<UpdateSubscription>> SubscribeToTickersAsync(ITickerSocketClient tickerClient, SharedSpotSymbol[] symbols, int setNumber)
         {
             var subResult = await tickerClient.SubscribeToTickerUpdatesAsync(new SubscribeTickerRequest(symbols.Select(x => x.SharedSymbol)), ProcessUpdate, _stoppingToken);
-            if (!subResult)
+            if (!subResult.Success)
             {
                 _logger.LogDebug("TickerPublishService batch ticker for {Exchange} failed", tickerClient.Exchange);
                 return subResult;
@@ -206,7 +206,7 @@ namespace CryptoManager.Net.Publisher.Tickers
 
 #warning if this fails there is no backup to get the tickers up and running again
                     var result = await SubscribeToTickersAsync(tickerClient, validSymbols, setNumber);
-                    if (!result)
+                    if (!result.Success)
                         _logger.LogError($"TickerPublishService resubscribing symbols failed; dropped symbols: [{string.Join(", ", symbols.Select(x => x.Name).Except(validSymbols.Select(x => x.Name)))}]");
                     else
                         _logger.LogError($"TickerPublishService resubscribing symbols succeeded; dropped symbols: [{string.Join(", ", symbols.Select(x => x.Name).Except(validSymbols.Select(x => x.Name)))}]");
@@ -261,7 +261,7 @@ namespace CryptoManager.Net.Publisher.Tickers
             var tickersTasks = _restClient.GetSpotTickersAsyncEnumerable(new GetTickersRequest(), exchanges, _stoppingToken);
             await foreach (var result in tickersTasks)
             {
-                if (!result)
+                if (!result.Success)
                 {
                     // TODO someway to publish errors
                     _logger.LogError("Failed to request tickers from exchange {Exchange}: {Error}", result.Exchange, result.Error!.ToString());

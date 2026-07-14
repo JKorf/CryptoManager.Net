@@ -41,7 +41,7 @@ namespace CryptoManager.Net.Subscriptions.Tickers
             var symbolData = symbolId.Split("-");
             var client = _socketClient.GetTickerClient(TradingMode.Spot, symbolData[0]);
             if (client == null)
-                return new CallResult(ArgumentError.Invalid(symbolId, $"No Ticker subscription client available for {symbolData[0]}"));
+                return CallResult.Fail(ArgumentError.Invalid(symbolId, $"No Ticker subscription client available for {symbolData[0]}"));
 
             // Could be improved if semaphore is released earlier and a new semaphore is acquired only for a specific symbol
             var semaphore = _symbolSemaphores.GetOrAdd(symbolId, x => new SemaphoreSlim(1, 1));
@@ -57,7 +57,7 @@ namespace CryptoManager.Net.Subscriptions.Tickers
                 if (connectionSubs.TryGetValue(symbolId, out _))
                 {
                     _logger.LogInformation("Connection already has a Ticker subscription for {Symbol}", symbolId);
-                    return CallResult.SuccessResult;
+                    return CallResult.Ok();
                 }
 
 
@@ -67,15 +67,15 @@ namespace CryptoManager.Net.Subscriptions.Tickers
                 {
                     existingSub.SubscriptionCount++;
                     _logger.LogInformation("Adding callback to existing Ticker subscription for {Symbol}, now {SubsOnSymbol}. {TotalSubs} Ticker subscriptions for {DiffSubs} different symbols in total", symbolId, existingSub.SubscriptionCount, _connectionSubscriptions.Sum(x => x.Value.Count), _updateSubscriptions.Count);
-                    return CallResult.SuccessResult;
+                    return CallResult.Ok();
                 }
 
                 _logger.LogInformation("Subscribing to Ticker updates for {Symbol}", symbolId);
                 var subscription = await client.SubscribeToTickerUpdatesAsync(new SubscribeTickerRequest(new SharedSymbol(TradingMode.Spot, symbolData[1], symbolData[2])), update => ProcessUpdate(symbolId, update));
-                if (!subscription)
+                if (!subscription.Success)
                 {
                     _logger.LogWarning("Failed to subscribe Tickers for {Symbol}: {Error}", symbolId, subscription.Error!.ToString());
-                    return new CallResult(subscription.Error);
+                    return CallResult.Fail(subscription.Error);
                 }
 
                 subscription.Data.ConnectionLost += () => ProcessConnectionLost(symbolId);
@@ -89,7 +89,7 @@ namespace CryptoManager.Net.Subscriptions.Tickers
                 semaphore.Release();
             }
 
-            return CallResult.SuccessResult;
+            return CallResult.Ok();
         }
         private void ProcessConnectionRestored(string symbolId)
         {

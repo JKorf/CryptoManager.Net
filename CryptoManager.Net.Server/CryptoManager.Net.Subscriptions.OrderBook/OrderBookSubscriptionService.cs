@@ -42,7 +42,7 @@ namespace CryptoManager.Net.Subscriptions.OrderBook
             var symbolData = symbolId.Split("-");
             var orderBook = _factory.Create(symbolData[0], new SharedSymbol(TradingMode.Spot, symbolData[1], symbolData[2]), 10);
             if (orderBook == null)
-                return new CallResult(ArgumentError.Invalid(symbolId, $"No Orderbook subscription client available for {symbolData[0]}"));
+                return CallResult.Fail(ArgumentError.Invalid(symbolId, $"No Orderbook subscription client available for {symbolData[0]}"));
 
             var semaphore = _symbolSemaphores.GetOrAdd(symbolId, x => new SemaphoreSlim(1, 1));
             await semaphore.WaitAsync();
@@ -57,7 +57,7 @@ namespace CryptoManager.Net.Subscriptions.OrderBook
                 if (connectionSubs.TryGetValue(symbolId, out _))
                 {
                     _logger.LogInformation("Connection already has a Orderbook subscription for {Symbol}", symbolId);
-                    return CallResult.SuccessResult;
+                    return CallResult.Ok();
                 }
 
                 connectionSubs.TryAdd(symbolId, new ConnectionSubscription(symbolId, statusHandler, dataHandler));
@@ -66,15 +66,15 @@ namespace CryptoManager.Net.Subscriptions.OrderBook
                 {
                     existingSub.SubscriptionCount++;
                     _logger.LogInformation("Adding callback to existing Orderbook subscription for {Symbol}, now {SubsOnSymbol}. {TotalSubs} Orderbook subscriptions for {DiffSubs} different symbols in total", symbolId, existingSub.SubscriptionCount, _connectionSubscriptions.Sum(x => x.Value.Count), _updateSubscriptions.Count);
-                    return CallResult.SuccessResult;
+                    return CallResult.Ok();
                 }
 
                 _logger.LogInformation("Subscribing to Orderbook updates for {Symbol}", symbolId);
                 var result = await orderBook.StartAsync();
-                if (!result)
+                if (!result.Success)
                 {
                     _logger.LogWarning("Failed to subscribe Orderbook for {Symbol}: {Error}", symbolId, result.Error!.ToString());
-                    return new CallResult(result.Error);
+                    return CallResult.Fail(result.Error);
                 }
 
                 var processTask = Task.Run(async () =>
@@ -100,7 +100,7 @@ namespace CryptoManager.Net.Subscriptions.OrderBook
                 semaphore.Release();
             }
 
-            return CallResult.SuccessResult;
+            return CallResult.Ok();
         }
 
         private void ProcessStatusUpdate(string symbolId, OrderBookStatus oldState, OrderBookStatus newState, Action<SubscriptionEvent> statusHandler)

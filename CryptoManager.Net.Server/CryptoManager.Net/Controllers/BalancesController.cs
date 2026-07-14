@@ -270,7 +270,7 @@ namespace CryptoManager.Net.Controllers
             var dbBalances = new List<UserBalance>();
             foreach (var result in balanceResults.Where(x => x.Success))
             {
-                dbBalances.AddRange(result.Data.Select(x => new UserBalance
+                dbBalances.AddRange(result.Data!.Select(x => new UserBalance
                 {
                     Id = $"{UserId}-{result.Exchange}-{x.Asset}",
                     Exchange = result.Exchange,

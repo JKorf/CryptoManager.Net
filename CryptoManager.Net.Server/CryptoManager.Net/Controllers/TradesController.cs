@@ -1,6 +1,7 @@
 ﻿using CryptoClients.Net.Interfaces;
 using CryptoClients.Net.Models;
 using CryptoExchange.Net.Authentication;
+using CryptoExchange.Net.Objects;
 using CryptoExchange.Net.SharedApis;
 using CryptoManager.Net.Caching;
 using CryptoManager.Net.Database;
@@ -97,7 +98,7 @@ namespace CryptoManager.Net.Controllers
             };
             var client = _clientProvider.GetRestClient(UserId.ToString(), ExchangeCredentials.CreateFrom(credentials), environments);
 
-            ExchangeWebResult<SharedUserTrade[]> userTrades;
+            HttpResult<SharedUserTrade[]> userTrades;
             if (!string.IsNullOrEmpty(orderId))
             {
                 var orderIdData = orderId.Split("-");
@@ -109,7 +110,7 @@ namespace CryptoManager.Net.Controllers
                 userTrades = await client.GetSpotUserTradesAsync(symbolData[0], new GetUserTradesRequest(new SharedSymbol(TradingMode.Spot, symbolData[1], symbolData[2])));
             }
 
-            if (!userTrades)
+            if (!userTrades.Success)
                 return ApiResult.Error(userTrades.Error!.ErrorType, userTrades.Error.ErrorCode, userTrades.Error.Message);
 
             var dbTrades = userTrades.Data.Select(x => new UserTrade

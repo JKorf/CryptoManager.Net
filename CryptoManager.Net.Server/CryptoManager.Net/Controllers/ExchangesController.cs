@@ -153,7 +153,7 @@ public class ExchangesController : ApiController
 
         var symbolParts = symbolId.Split('-');
         var fees = await feeClient.GetFeesAsync(new GetFeeRequest(new SharedSymbol(TradingMode.Spot, symbolParts[1], symbolParts[2])));
-        if (!fees)
+        if (!fees.Success)
             return ApiResult<ApiExchangeFees>.Error(fees.Error!.ErrorType, fees.Error.ErrorCode, fees.Error.Message);
 
         return ApiResult<ApiExchangeFees>.Ok(new ApiExchangeFees()

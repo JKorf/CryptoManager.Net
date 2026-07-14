@@ -397,3 +397,4 @@ FodyWeavers.xsd
 *.sln.iml
 
 .env
+CryptoManager.Net.Server/CryptoManager.Net/Properties/PublishProfiles/cryptoclients-tracker - Zip Deploy.pubxml.user
