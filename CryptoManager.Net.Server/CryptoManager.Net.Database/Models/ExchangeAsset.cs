@@ -11,7 +11,8 @@ namespace CryptoManager.Net.Database.Models
         [Key]
         public string Id { get; set; } = string.Empty;
         public string Asset { get; set; } = string.Empty;
-        public AssetType AssetType { get; set; }
+        public SharedAssetType AssetType { get; set; }
+        public SharedAssetSubType? AssetSubType { get; set; }
         public string Exchange { get; set; } = string.Empty;
 
         [Precision(28, 8)]

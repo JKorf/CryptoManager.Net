@@ -44,8 +44,10 @@ namespace CryptoManager.Net.Database.Models
         public int? PriceDecimals { get; set; }
         public int? PriceSignificantFigures { get; set; }
 
-        public AssetType QuoteAssetType { get; set; }
-        public AssetType BaseAssetType { get; set; }
+        public SharedAssetType BaseAssetType { get; set; }
+        public SharedAssetSubType? BaseAssetSubType { get; set; }
+        public SharedAssetType QuoteAssetType { get; set; }
+        public SharedAssetSubType? QuoteAssetSubType { get; set; }
 
         public SharedTickerType TickerType { get; set; }
         public bool? Enabled { get; set; }

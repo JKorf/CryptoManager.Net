@@ -84,7 +84,11 @@ namespace CryptoManager.Net.Publisher.Symbols
                         PriceSignificantFigures = symbol.PriceSignificantFigures,
                         PriceStep = symbol.PriceStep,
                         QuantityStep = symbol.QuantityStep,
-                        Trading = symbol.Trading
+                        Trading = symbol.Trading,
+                        BaseAssetType = symbol.BaseAssetType,
+                        BaseAssetSubType = symbol.BaseAssetSubType,
+                        QuoteAssetType = symbol.QuoteAssetType,
+                        QuoteAssetSubType = symbol.QuoteAssetSubType
                     });
                 }
 

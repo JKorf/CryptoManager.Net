@@ -5,6 +5,6 @@
         Fiat,
         Stable,
         Crypto,
-        LeveragedToken
+        TradFi
     }
 }

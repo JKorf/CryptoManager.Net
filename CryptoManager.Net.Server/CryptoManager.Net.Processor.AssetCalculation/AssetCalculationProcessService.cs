@@ -1,4 +1,5 @@
-﻿using CryptoManager.Net.Database;
+﻿using CryptoExchange.Net.SharedApis;
+using CryptoManager.Net.Database;
 using CryptoManager.Net.Database.Models;
 using CryptoManager.Net.Models;
 using CryptoManager.Net.Publish;
@@ -52,21 +53,24 @@ namespace CryptoManager.Net.Processor.Tickers
                 var ids = update.Data.Select(x => $"{x.Exchange}-{x.Asset}").ToList();
                 var symbolData = await context.Symbols
                                 .Where(x => ids.Contains(x.BaseAssetExchangeId))
-                                .Select(x => new { x.Exchange, x.BaseAsset, x.BaseAssetType, x.QuoteAsset, x.QuoteAssetType, x.ChangePercentage, x.Volume, x.LastPrice, x.TickerType })
+                                .Where(x => x.DeleteTime == null)
+                                .Select(x => new { x.Exchange, x.BaseAsset, x.BaseAssetType, x.BaseAssetSubType, x.QuoteAsset, x.QuoteAssetType, x.QuoteAssetSubType, x.ChangePercentage, x.Volume, x.LastPrice, x.TickerType })
                                 .GroupBy(x => new { x.Exchange, x.BaseAsset })
                                 .ToListAsync();
-
+                                
                 var data = symbolData.Select(x =>
                 {
                     var first = x.First();
+                    var id = $"{first.Exchange}-{first.BaseAsset}";
                     return new ExchangeAsset
                     {
-                        Id = $"{first.Exchange}-{first.BaseAsset}",
+                        Id = id,
                         Asset = first.BaseAsset,
                         AssetType = first.BaseAssetType,
+                        AssetSubType = first.BaseAssetSubType,
                         Exchange = first.Exchange,
-                        ChangePercentage = x.Where(x => (x.QuoteAssetType == AssetType.Stable || x.QuoteAsset == "USD") && x.ChangePercentage != null).Average(x => x.ChangePercentage),
-                        Value = x.Where(x => (x.QuoteAssetType == AssetType.Stable || x.QuoteAsset == "USD") && x.LastPrice != null).Average(x => x.LastPrice),
+                        ChangePercentage = x.Where(x => ((x.QuoteAssetType == SharedAssetType.Fiat || x.QuoteAssetSubType == SharedAssetSubType.StableCoin) && x.QuoteAsset.Contains("USD")) && x.ChangePercentage != null).Average(x => x.ChangePercentage),
+                        Value = x.Where(x => ((x.QuoteAssetType == SharedAssetType.Fiat || x.QuoteAssetSubType == SharedAssetSubType.StableCoin) && x.QuoteAsset.Contains("USD")) && x.LastPrice != null).Average(x => x.LastPrice),
                         Volume = x.Sum(x => x.Volume ?? 0),
                         UpdateTime = DateTime.UtcNow,
                         TickerType = first.TickerType

@@ -4,7 +4,6 @@ using CryptoManager.Net.Models.Response;
 using CryptoManager.Net.UI.Authorization;
 using CryptoManager.Net.UI.Models;
 using CryptoManager.Net.UI.Models.ApiModels.Response;
-using Jose;
 using Microsoft.AspNetCore.Components.Authorization;
 using System.Collections.Concurrent;
 using System.Data;

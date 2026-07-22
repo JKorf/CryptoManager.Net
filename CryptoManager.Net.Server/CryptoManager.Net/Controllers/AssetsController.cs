@@ -1,3 +1,4 @@
+using CryptoExchange.Net.SharedApis;
 using CryptoManager.Net.Caching;
 using CryptoManager.Net.Database;
 using CryptoManager.Net.Database.Models;
@@ -41,7 +42,34 @@ public class AssetsController : ApiController
         IQueryable<Asset> dbQuery = _dbContext.Assets;
 
         if (assetType != null)
-            dbQuery = dbQuery.Where(x => x.AssetType == assetType.Value);
+        {
+            SharedAssetType baseType;
+            SharedAssetSubType? baseSubType = null;
+
+            if (assetType == AssetType.Crypto)
+            {
+                baseType = SharedAssetType.Crypto;
+            }
+            else if (assetType == AssetType.Fiat)
+            {
+                baseType = SharedAssetType.Fiat;
+            }
+            else if (assetType == AssetType.Stable)
+            {
+                baseType = SharedAssetType.Crypto;
+                baseSubType = SharedAssetSubType.StableCoin;
+            }
+            else if (assetType == AssetType.TradFi)
+            {
+                baseType = SharedAssetType.TradFi;
+            }
+            else
+            {
+                throw new Exception("Unsupported asset type");
+            }
+
+            dbQuery = dbQuery.Where(x => x.AssetType == baseType && (baseSubType == null || x.AssetSubType == baseSubType));
+        }
 
         if (!string.IsNullOrEmpty(query))
             dbQuery = dbQuery.Where(x => x.Id.Contains(query));
@@ -71,6 +99,7 @@ public class AssetsController : ApiController
         {
             Name = x.Id,
             AssetType = x.AssetType,
+            AssetSubType = x.AssetSubType,
             Value = x.Value,
             Volume = x.Volume,
             VolumeUsd = x.Value * x.Volume,

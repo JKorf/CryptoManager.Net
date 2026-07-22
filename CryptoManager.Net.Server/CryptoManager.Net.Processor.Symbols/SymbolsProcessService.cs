@@ -1,4 +1,5 @@
-﻿using CryptoManager.Net.Database;
+﻿using CryptoExchange.Net;
+using CryptoManager.Net.Database;
 using CryptoManager.Net.Database.Models;
 using CryptoManager.Net.Models;
 using CryptoManager.Net.Publish;
@@ -13,9 +14,6 @@ namespace CryptoManager.Net.Processor.Symbols
     {
         private CancellationToken _stoppingToken = default;
         private readonly ILogger _logger;
-        private string[] _usdStableAssets;
-        private string[] _fiatAssets;
-        private string[] _leveragedTokens;
         private readonly IProcessInput<Symbol> _processInput;
         private readonly IPublishOutput<PendingAssetCalculation> _assetCalcOutput;
         private readonly IDbContextFactory<TrackerContext> _dbContextFactory;
@@ -31,10 +29,6 @@ namespace CryptoManager.Net.Processor.Symbols
             _processInput = processInput;
             _assetCalcOutput = assetCalcOutput;
             _dbContextFactory = dbContextFactory;
-
-            _usdStableAssets = configuration.GetValue<string>("UsdStableAssets")!.Split(";");
-            _fiatAssets = configuration.GetValue<string>("FiatAssets")!.Split(";");
-            _leveragedTokens = configuration.GetValue<string>("LeveragedTokens")!.Split(";");
         }
 
         public async Task ExecuteAsync(CancellationToken ct)
@@ -78,8 +72,10 @@ namespace CryptoManager.Net.Processor.Symbols
                     PriceSignificantFigures = item.PriceSignificantFigures,
                     QuantityDecimals = item.QuantityDecimals,
                     QuantityStep = item.QuantityStep,
-                    BaseAssetType = GetAssetType(item.BaseAsset, true),
-                    QuoteAssetType = GetAssetType(item.QuoteAsset, false),
+                    BaseAssetType = item.BaseAssetType,
+                    BaseAssetSubType = item.BaseAssetSubType,
+                    QuoteAssetType = item.QuoteAssetType,
+                    QuoteAssetSubType = item.QuoteAssetSubType,
                     Enabled = item.Trading,
                     UpdateTime = DateTime.UtcNow,
                     DeleteTime = null
@@ -128,7 +124,9 @@ namespace CryptoManager.Net.Processor.Symbols
                         nameof(ExchangeSymbol.QuantityDecimals),
                         nameof(ExchangeSymbol.QuantityStep),
                         nameof(ExchangeSymbol.BaseAssetType),
+                        nameof(ExchangeSymbol.BaseAssetSubType),
                         nameof(ExchangeSymbol.QuoteAssetType),
+                        nameof(ExchangeSymbol.QuoteAssetSubType),
                         nameof(ExchangeSymbol.Enabled),
                         nameof(ExchangeSymbol.UpdateTime),
                         nameof(ExchangeSymbol.DeleteTime)
@@ -174,20 +172,6 @@ namespace CryptoManager.Net.Processor.Symbols
                     _logger.LogError(ex, "Failed to process removed symbols in Symbol update");
                 }
             }
-        }
-
-        private AssetType GetAssetType(string asset, bool checkLeveraged)
-        {
-            if (_usdStableAssets.Contains(asset))
-                return AssetType.Stable;
-
-            if (_fiatAssets.Contains(asset))
-                return AssetType.Fiat;
-
-            if (checkLeveraged && _leveragedTokens.Any(x => asset.Contains(x)))
-                return AssetType.LeveragedToken;
-
-            return AssetType.Crypto;
         }
     }
 }

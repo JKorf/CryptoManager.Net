@@ -1,4 +1,6 @@
-﻿namespace CryptoManager.Net.Models
+﻿using CryptoExchange.Net.SharedApis;
+
+namespace CryptoManager.Net.Models
 {
     /// <summary>
     /// Symbol info
@@ -53,5 +55,21 @@
         /// Whether the symbol is currently available for trading
         /// </summary>
         public bool Trading { get; set; }
+        /// <summary>
+        /// Base asset type
+        /// </summary>
+        public SharedAssetType BaseAssetType { get; set; }
+        /// <summary>
+        /// Quote asset tpye
+        /// </summary>
+        public SharedAssetType QuoteAssetType { get; set; }
+        /// <summary>
+        /// Base asset subtype
+        /// </summary>
+        public SharedAssetSubType? BaseAssetSubType { get; set; }
+        /// <summary>
+        /// Quote asset subtype
+        /// </summary>
+        public SharedAssetSubType? QuoteAssetSubType { get; set; }
     }
 }

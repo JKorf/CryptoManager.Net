@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using CryptoExchange.Net.SharedApis;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
 namespace CryptoManager.Net.Database.Models
@@ -7,7 +8,8 @@ namespace CryptoManager.Net.Database.Models
     {
         [Key]
         public string Id { get; set; } = string.Empty;
-        public AssetType AssetType { get; set; }
+        public SharedAssetType AssetType { get; set; }
+        public SharedAssetSubType? AssetSubType { get; set; }
 
         [Precision(28, 8)]
         public decimal? Value { get; set; }
