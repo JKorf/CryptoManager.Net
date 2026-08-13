@@ -85,7 +85,7 @@ namespace CryptoManager.Net.Subscriptions.User
                 if (_enabledExchanges?.Any() == true)
                     exchanges = exchanges.Where(x => _enabledExchanges.Contains(x)).ToArray();
 
-                var trackers = _trackerFactory.CreateUserSpotDataTracker(userId.ToString(), credentials, new SpotUserDataTrackerConfig { }, environments, exchanges.ToArray());
+                var trackers = _trackerFactory.CreateUserSpotDataTracker(userId.ToString(), credentials, new SpotUserDataTrackerConfig { }, environments!, exchanges.ToArray());
                 foreach(var tracker in trackers)
                 {
                     tracker.Balances.OnUpdate += (x) => HandleBalanceUpdate(userId, x);

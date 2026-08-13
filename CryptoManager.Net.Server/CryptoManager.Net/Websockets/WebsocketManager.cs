@@ -328,7 +328,7 @@ namespace CryptoManager.Net.Websockets
                     var subResult = await _tradeSubscriptionService.SubscribeAsync(connection.Id, message.SymbolId, update => SendDataUpdate(connection.Connection, message.Id, update.Data.Select(x => new ApiTrade
                     {
                         Price = x.Price,
-                        Quantity = x.Quantity,
+                        Quantity = x.Quantities.QuantityInBaseAsset ?? 0,
                         Side = x.Side,
                         Timestamp = x.Timestamp
                     })),
@@ -346,8 +346,8 @@ namespace CryptoManager.Net.Websockets
                             HighPrice = x.Data.HighPrice,
                             LastPrice = x.Data.LastPrice,
                             LowPrice = x.Data.LowPrice,
-                            QuoteVolume = x.Data.QuoteVolume,
-                            Volume = x.Data.Volume,
+                            QuoteVolume = x.Data.Volumes.QuantityInQuoteAsset,
+                            Volume = x.Data.Volumes.QuantityInBaseAsset ?? 0,
                         }),
                         update => SendStatusUpdate(connection.Connection, message.Id, update.Status),
                         _cts.Token);

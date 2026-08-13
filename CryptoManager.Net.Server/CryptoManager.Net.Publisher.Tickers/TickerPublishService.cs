@@ -104,7 +104,7 @@ namespace CryptoManager.Net.Publisher.Tickers
             {
                 var results = await _restClient.GetSpotSymbolsAsync(new GetSymbolsRequest(), _enabledExchanges);
                 foreach (var result in results.Where(x => x.Success))
-                    _symbols[result.Exchange] = result.Data;
+                    _symbols[result.Exchange] = result.Data!;
 
                 _symbolsInitialSetEvent.Set();
                 try { await Task.Delay(TimeSpan.FromMinutes(15), _stoppingToken); } catch { }
@@ -294,8 +294,8 @@ namespace CryptoManager.Net.Publisher.Tickers
                 HighPrice = ticker.HighPrice,
                 LastPrice = ticker.LastPrice,
                 LowPrice = ticker.LowPrice,
-                Volume = ticker.Volume,
-                QuoteVolume = ticker.QuoteVolume,
+                Volume = ticker.Volumes.QuantityInBaseAsset ?? 0,
+                QuoteVolume = ticker.Volumes.QuantityInQuoteAsset,
                 TickerType = tickerType
             };
         }
