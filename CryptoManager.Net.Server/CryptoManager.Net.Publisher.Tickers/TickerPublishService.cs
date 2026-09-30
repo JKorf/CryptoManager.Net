@@ -17,8 +17,7 @@ namespace CryptoManager.Net.Publisher.Tickers
     {
         private CancellationToken _stoppingToken = default;
         private readonly ILogger _logger;
-        private readonly IExchangeRestClient _restClient;
-        private readonly IExchangeSocketClient _socketClient;
+        private readonly IExchangeSharedApiClient _exchangeClient;
         private readonly IPublishOutput<Ticker> _publishOutput;
         private readonly double _pollInterval;
         private readonly DataBatcher<Ticker> _tickerBatcher;
@@ -30,13 +29,11 @@ namespace CryptoManager.Net.Publisher.Tickers
         public TickerPublishService(
             ILogger<TickerPublishService> logger,
             IConfiguration configuration,
-            IExchangeRestClient restClient,
-            IExchangeSocketClient socketClient,
+            IExchangeSharedApiClient exchangeClient,
             IPublishOutput<Ticker> publishOutput)
         {
             _logger = logger;
-            _restClient = restClient;
-            _socketClient = socketClient;
+            _exchangeClient = exchangeClient;
             _publishOutput = publishOutput;
 
             _pollInterval = configuration.GetValue<double?>("TickersPollInterval") ?? 0.16;
@@ -102,9 +99,17 @@ namespace CryptoManager.Net.Publisher.Tickers
             // Poll symbols on interval so we know which ones are no longer support
             while (!_stoppingToken.IsCancellationRequested)
             {
-                var results = await _restClient.GetSpotSymbolsAsync(new GetSymbolsRequest(), _enabledExchanges);
-                foreach (var result in results.Where(x => x.Success))
+                
+                await foreach(var result in _exchangeClient.GetCapabilities<IGetSpotSymbols>(TradingMode.Spot, exchanges: _enabledExchanges).ExecuteAllAsync(new GetSymbolsRequest()))
+                {
+                    if (!result.Success)
+                    {
+                        _logger.LogError("Failed to request symbols from exchange {Exchange}: {Error}", result.Exchange, result.Error!.ToString());
+                        continue;
+                    }
+
                     _symbols[result.Exchange] = result.Data!;
+                }
 
                 _symbolsInitialSetEvent.Set();
                 try { await Task.Delay(TimeSpan.FromMinutes(15), _stoppingToken); } catch { }
@@ -115,12 +120,12 @@ namespace CryptoManager.Net.Publisher.Tickers
         {
             var exchanges = _enabledExchanges ?? Exchange.All;
             var subbedExchanges = new List<string>();
-            var allTickerClients = _socketClient.GetTickersClients(TradingMode.Spot).Where(x => exchanges.Contains(x.Exchange));
 
+            var allTickerClients = _exchangeClient.GetCapabilities<ISubscribeAllTickersSocket>(TradingMode.Spot, exchanges: exchanges);
             foreach (var tickerClient in allTickerClients)
             {
                 _logger.LogDebug("TickerPublishService starting subscription for all tickers for {Exchange}", tickerClient.Exchange);
-                var subResult = await tickerClient.SubscribeToAllTickersUpdatesAsync(new SubscribeAllTickersRequest(), ProcessUpdate, _stoppingToken);
+                var subResult = await tickerClient.Capability.SubscribeToAllTickersUpdatesAsync(new SubscribeAllTickersRequest(), ProcessUpdate, _stoppingToken);
                 if (subResult.Success)
                 {
                     AttachEventHandler(subResult.Data, $"{tickerClient.Exchange}.AllTickers");
@@ -128,8 +133,9 @@ namespace CryptoManager.Net.Publisher.Tickers
                 }
             }
 
-            var multiTickerClients = _socketClient.GetTickerClients(TradingMode.Spot)
-                .Where(x => !subbedExchanges.Contains(x.Exchange) && exchanges.Contains(x.Exchange) && x.SubscribeTickerOptions.SupportsMultipleSymbols);
+            var multiTickerClients = _exchangeClient.GetCapabilities<ISubscribeTickerSocket>(TradingMode.Spot, exchanges: exchanges)
+                .Where(x => !subbedExchanges.Contains(x.Exchange) && x.Capability.SubscribeTickerOptions.SupportsMultipleSymbols);
+
             foreach (var tickerClient in multiTickerClients)
             {
                 if (tickerClient.Exchange == "Kraken")
@@ -140,7 +146,7 @@ namespace CryptoManager.Net.Publisher.Tickers
                     continue;
 
                 var offset = 0;
-                var perPage = tickerClient.SubscribeTickerOptions.MaxSymbolCount ?? exchangeSymbols.Length;
+                var perPage = tickerClient.Options.MaxSymbolCount ?? exchangeSymbols.Length;
 
                 var pages = Math.Ceiling(exchangeSymbols.Length / (double)perPage);
                 if (pages > 10)
@@ -153,7 +159,7 @@ namespace CryptoManager.Net.Publisher.Tickers
                 for (var i = 0; i < pages; i++)
                 {
                     var symbols = exchangeSymbols[offset..(offset + perPage)];
-                    var subResult = await SubscribeToTickersAsync(tickerClient, symbols, i);
+                    var subResult = await SubscribeToTickersAsync(tickerClient.Capability, symbols, i);
                     if (!subResult.Success)
                     {
                         await Task.WhenAll(exchangeSubs.Select(x => x.CloseAsync()));
@@ -183,7 +189,7 @@ namespace CryptoManager.Net.Publisher.Tickers
             subscription.Exception += ex => _logger.LogError(ex, "Subscription {Topic} exception", topic);
         }
 
-        private async Task<WebSocketResult<UpdateSubscription>> SubscribeToTickersAsync(ITickerSocketClient tickerClient, SharedSpotSymbol[] symbols, int setNumber)
+        private async Task<WebSocketResult<UpdateSubscription>> SubscribeToTickersAsync(ISubscribeTickerSocket tickerClient, SharedSpotSymbol[] symbols, int setNumber)
         {
             var subResult = await tickerClient.SubscribeToTickerUpdatesAsync(new SubscribeTickerRequest(symbols.Select(x => x.SharedSymbol)), ProcessUpdate, _stoppingToken);
             if (!subResult.Success)
@@ -225,19 +231,19 @@ namespace CryptoManager.Net.Publisher.Tickers
             return symbols.Where(x => exchangeSymbols.Any(y => x.Name == y.Name && x.Trading)).ToArray();
         }
 
-        private void ProcessUpdate(DataEvent<SharedSpotTicker> @event)
+        private void ProcessUpdate(DataEvent<SharedTicker> @event)
         {
             var exchangeData = new PublishItem<Ticker>(@event.Exchange);
             var data = new Dictionary<string, Ticker>();
             if (@event.Data.SharedSymbol == null)
                 return;
 
-            var tickerOptions = _restClient.GetSpotTickerClient(@event.Exchange)!.GetSpotTickersOptions;
+            var tickerOptions = (GetTickerOptions)_exchangeClient.GetCapability<IGetTickerRest>(@event.Exchange, TradingMode.Spot)!.Options;
             data.Add(@event.Exchange + @event.Data.Symbol, ParseTicker(@event.Exchange, @event.Data, tickerOptions.TickerType));
             _ = _tickerBatcher.AddAsync(data);
         }
 
-        private void ProcessUpdate(DataEvent<SharedSpotTicker[]> @event)
+        private void ProcessUpdate(DataEvent<SharedTicker[]> @event)
         {
             var exchangeData = new PublishItem<Ticker>(@event.Exchange);
             var data = new Dictionary<string, Ticker>();
@@ -248,7 +254,7 @@ namespace CryptoManager.Net.Publisher.Tickers
                     continue;
                 }
  
-                var tickerOptions = _restClient.GetSpotTickerClient(@event.Exchange)!.GetSpotTickersOptions;
+                var tickerOptions = (GetAllTickersOptions)_exchangeClient.GetCapability<IGetAllTickersRest>(@event.Exchange, TradingMode.Spot)!.Options;
                 data.Add(@event.Exchange + symbol.Symbol, ParseTicker(@event.Exchange, symbol, tickerOptions.TickerType));
             }
 
@@ -258,7 +264,7 @@ namespace CryptoManager.Net.Publisher.Tickers
 
         private async Task PollAsync(List<string> exchanges)
         {
-            var tickersTasks = _restClient.GetSpotTickersAsyncEnumerable(new GetTickersRequest(), exchanges, _stoppingToken);
+            var tickersTasks = _exchangeClient.GetCapabilities<IGetAllTickersRest>(TradingMode.Spot, exchanges: exchanges).ExecuteAllAsync(new GetTickersRequest(), _stoppingToken);
             await foreach (var result in tickersTasks)
             {
                 if (!result.Success)
@@ -269,7 +275,7 @@ namespace CryptoManager.Net.Publisher.Tickers
                 }
 
                 var exchangeData = new PublishItem<Ticker>(result.Exchange);
-                var tickerOptions = _restClient.GetSpotTickerClient(result.Exchange)!.GetSpotTickersOptions;
+                var tickerOptions = (GetAllTickersOptions)_exchangeClient.GetCapability<IGetAllTickersRest>(result.Exchange, TradingMode.Spot)!.Options;
                 var data = new Dictionary<string, Ticker>();
                 foreach (var symbol in result.Data)
                 {
@@ -282,7 +288,7 @@ namespace CryptoManager.Net.Publisher.Tickers
             }
         }
 
-        private Ticker ParseTicker(string exchange, SharedSpotTicker ticker, SharedTickerType tickerType)
+        private Ticker ParseTicker(string exchange, SharedTicker ticker, SharedTickerType tickerType)
         {
             return new Ticker
             {

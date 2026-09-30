@@ -11,7 +11,7 @@ namespace CryptoManager.Net.Subscriptions.Tickers
     public class TickerSubscriptionService
     {
         private readonly ILogger _logger;
-        private readonly IExchangeSocketClient _socketClient;
+        private readonly IExchangeSharedApiClient _client;
 
         private readonly ConcurrentDictionary<string, SemaphoreSlim> _symbolSemaphores = new ConcurrentDictionary<string, SemaphoreSlim>();
 
@@ -25,21 +25,21 @@ namespace CryptoManager.Net.Subscriptions.Tickers
 
         public TickerSubscriptionService(
             ILogger<TickerSubscriptionService> logger,
-            IExchangeSocketClient socketClient)
+            IExchangeSharedApiClient client)
         {
             _logger = logger;
-            _socketClient = socketClient;
+            _client = client;
         }
 
         public async Task<CallResult> SubscribeAsync(
             string connectionId,
             string symbolId,
-            Action<DataEvent<SharedSpotTicker>> handler,
+            Action<DataEvent<SharedTicker>> handler,
             Action<SubscriptionEvent> statusHandler,
             CancellationToken ct)
         {
             var symbolData = symbolId.Split("-");
-            var client = _socketClient.GetTickerClient(TradingMode.Spot, symbolData[0]);
+            var client = _client.GetCapability<ISubscribeTickerSocket>(symbolData[0], TradingMode.Spot);
             if (client == null)
                 return CallResult.Fail(ArgumentError.Invalid(symbolId, $"No Ticker subscription client available for {symbolData[0]}"));
 
@@ -71,7 +71,7 @@ namespace CryptoManager.Net.Subscriptions.Tickers
                 }
 
                 _logger.LogInformation("Subscribing to Ticker updates for {Symbol}", symbolId);
-                var subscription = await client.SubscribeToTickerUpdatesAsync(new SubscribeTickerRequest(new SharedSymbol(TradingMode.Spot, symbolData[1], symbolData[2])), update => ProcessUpdate(symbolId, update));
+                var subscription = await client.Capability.SubscribeToTickerUpdatesAsync(new SubscribeTickerRequest(new SharedSymbol(TradingMode.Spot, symbolData[1], symbolData[2])), update => ProcessUpdate(symbolId, update));
                 if (!subscription.Success)
                 {
                     _logger.LogWarning("Failed to subscribe Tickers for {Symbol}: {Error}", symbolId, subscription.Error!.ToString());
@@ -104,7 +104,7 @@ namespace CryptoManager.Net.Subscriptions.Tickers
                 updateSubscription.Value.StatusCallback(evnt);
         }
 
-        private void ProcessUpdate(string symbolId, DataEvent<SharedSpotTicker> update)
+        private void ProcessUpdate(string symbolId, DataEvent<SharedTicker> update)
         {
             foreach (var updateSubscription in _connectionSubscriptions.SelectMany(x => x.Value).Where(x => x.Value.SymbolId == symbolId))
                 updateSubscription.Value.DataCallback(update);

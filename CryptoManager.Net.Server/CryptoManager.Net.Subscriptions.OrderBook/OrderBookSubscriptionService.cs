@@ -83,7 +83,7 @@ namespace CryptoManager.Net.Subscriptions.OrderBook
                         && orderBook.Status != OrderBookStatus.Disposed)
                     {
                         var snapshot = orderBook.Book;
-                        var sharedBook = new SharedOrderBook(snapshot.asks.Take(10).ToArray(), snapshot.bids.Take(10).ToArray());
+                        var sharedBook = new SharedOrderBook(SharedQuantityType.BaseAsset, null, snapshot.asks.Take(10).ToArray(), snapshot.bids.Take(10).ToArray());
                         ProcessUpdate(symbolId, new DataEvent<SharedOrderBook>(symbolData[0], sharedBook, DateTime.UtcNow, null).WithSymbol(symbolId));
 
                         await Task.Delay(100);

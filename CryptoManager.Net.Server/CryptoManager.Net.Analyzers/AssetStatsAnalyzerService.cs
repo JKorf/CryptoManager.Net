@@ -33,13 +33,15 @@ namespace CryptoManager.Net.Analyzers
 
         private async Task ProcessAsync(CancellationToken ct)
         {
+            var cutoffTime = DateTime.UtcNow.AddMinutes(-1);
+
             try
             {
                 var sw = Stopwatch.StartNew();
                 using var assetContext = _contextFactory.CreateDbContext();
 
                 // Calculate asset stats over the ExchangeAssets
-                var allAssets = await assetContext.ExchangeAssets.Select(x => x.Asset).Distinct().ToArrayAsync();
+                var allAssets = await assetContext.ExchangeAssets.Where(x => x.UpdateTime >= cutoffTime).Select(x => x.Asset).Distinct().ToArrayAsync();
                 var batchSize = 1000;
                 var batches = Math.Ceiling(allAssets.Length / (double)batchSize);
                 for (var i = 0; i < batches; i++)
@@ -48,7 +50,7 @@ namespace CryptoManager.Net.Analyzers
 
                     var assets = allAssets.Skip(i * batchSize).Take(batchSize).ToArray();
                     using var context = _contextFactory.CreateDbContext();
-                    var exchangeAssets = await context.ExchangeAssets.Where(x => assets.Contains(x.Asset)).ToListAsync();
+                    var exchangeAssets = await context.ExchangeAssets.Where(x => assets.Contains(x.Asset) && x.UpdateTime >= cutoffTime).ToListAsync();
                     var assetsGroups = exchangeAssets.GroupBy(x => x.Asset);
                     foreach (var assetGroup in assetsGroups)
                     {

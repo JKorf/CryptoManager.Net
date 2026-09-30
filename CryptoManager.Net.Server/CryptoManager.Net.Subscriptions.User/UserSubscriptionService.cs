@@ -71,13 +71,12 @@ namespace CryptoManager.Net.Subscriptions.User
                 var environments = auths.ToDictionary(x => x.Exchange, x => x.Environment);
                 var credentials = ExchangeCredentials.CreateFrom(auths.ToDictionary(x => x.Exchange, x => ExchangeCredentials.CreateCredentialsForExchange(x.Exchange,
                     new DynamicCredentials(TradingMode.Spot, x.ApiKey, x.ApiSecret, x.ApiPass))));
-                var restClient = _clientProvider.GetRestClient(userId.ToString(), credentials, environments);
-                var socketClient = _clientProvider.GetSocketClient(userId.ToString(), credentials, environments);
+                var client = _clientProvider.GetSharedApiClient(userId.ToString(), credentials, environments);
 
                 var cts = new CancellationTokenSource();
                 _subscriptions.TryAdd(userId, new UserUpdateSubscription(
                     userId,
-                    socketClient,
+                    client,
                     new UserCallbacks(connectionId, balanceHandler, orderHandler, userTradeHandler, statusHandler),
                     cts));
 
@@ -154,7 +153,7 @@ namespace CryptoManager.Net.Subscriptions.User
                 if (subscription.CallbackCount == 0)
                 {
                     _logger.LogDebug("Unsubscribed user subscription for user {UserId}, no listeners, closing connection", subscription.UserId);
-                    await subscription.SocketClient.UnsubscribeAllAsync();
+                    await subscription.Client.UnsubscribeAllAsync();
                     _subscriptions.Remove(userId, out _);
                     subscription.Cts.Cancel();
                 }

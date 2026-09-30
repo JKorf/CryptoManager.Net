@@ -8,9 +8,9 @@ namespace CryptoManager.Net.Subscriptions.Tickers
     {
         public string SymbolId { get; set; }
         public Action<SubscriptionEvent> StatusCallback { get; set; }
-        public Action<DataEvent<SharedSpotTicker>> DataCallback { get; set; }
+        public Action<DataEvent<SharedTicker>> DataCallback { get; set; }
 
-        public ConnectionSubscription(string symbolId, Action<SubscriptionEvent> statusCallback, Action<DataEvent<SharedSpotTicker>> dataCallback)
+        public ConnectionSubscription(string symbolId, Action<SubscriptionEvent> statusCallback, Action<DataEvent<SharedTicker>> dataCallback)
         {
             SymbolId = symbolId;
             StatusCallback = statusCallback;

@@ -12,7 +12,7 @@ namespace CryptoManager.Net.Subscriptions.User
         private List<UserCallbacks> _callbacks;
 
         public int UserId { get; set; }
-        public IExchangeSocketClient SocketClient { get; set; }
+        public IExchangeSharedApiClient Client { get; set; }
         public CancellationTokenSource Cts { get; set; }
         public List<string> ConnectionsIds
         {
@@ -32,10 +32,10 @@ namespace CryptoManager.Net.Subscriptions.User
         }
 
 
-        public UserUpdateSubscription(int userId, IExchangeSocketClient client, UserCallbacks callbacks, CancellationTokenSource cts)
+        public UserUpdateSubscription(int userId, IExchangeSharedApiClient client, UserCallbacks callbacks, CancellationTokenSource cts)
         {
             UserId = userId;
-            SocketClient = client;
+            Client = client;
             Cts = cts;
             _callbacks = [callbacks];
         }

@@ -1,4 +1,5 @@
-﻿using CryptoClients.Net.Interfaces;
+﻿using CryptoClients.Net;
+using CryptoClients.Net.Interfaces;
 using CryptoExchange.Net.SharedApis;
 using CryptoManager.Net.Models;
 using CryptoManager.Net.Publish;
@@ -12,7 +13,7 @@ namespace CryptoManager.Net.Publisher.Symbols
     {
         private CancellationToken _stoppingToken = default;
         private readonly ILogger _logger;
-        private readonly IExchangeRestClient _restClient;
+        private readonly IExchangeSharedApiClient _client;
         private readonly IPublishOutput<Symbol> _publishOutput;
         private readonly int _pollInterval;
 
@@ -21,11 +22,11 @@ namespace CryptoManager.Net.Publisher.Symbols
         public SymbolPublishService(
             ILogger<SymbolPublishService> logger,
             IConfiguration configuration,
-            IExchangeRestClient restClient,
+            IExchangeSharedApiClient client,
             IPublishOutput<Symbol> publishOutput)
         {
             _logger = logger;
-            _restClient = restClient;
+            _client = client;
             _publishOutput = publishOutput;
 
             _pollInterval = configuration.GetValue<int?>("SymbolsPollInterval") ?? 1;
@@ -55,8 +56,9 @@ namespace CryptoManager.Net.Publisher.Symbols
 
         private async Task ProcessAsync()
         {
-            var symbolsTasks = _restClient.GetSpotSymbolsAsync(new GetSymbolsRequest(), _enabledExchanges, _stoppingToken);
-            await Task.WhenAll(symbolsTasks);
+            var symbolsTasks = _client.GetCapabilities<IGetSpotSymbolsRest>(TradingMode.Spot, exchanges: _enabledExchanges)
+                                        .ExecuteAllAsync(new GetSymbolsRequest(), _stoppingToken)
+                                        .WaitAllAsync();
 
             foreach (var result in symbolsTasks.Result)
             {

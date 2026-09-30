@@ -124,7 +124,7 @@ namespace CryptoManager.Net.Controllers
                 Fee = x.Fee,
                 FeeAsset = x.FeeAsset,
                 Price = x.Price,
-                Quantity = x.Quantity,
+                Quantity = x.Quantities.QuantityInBaseAsset,
                 Role = x.Role,
                 TradeId = x.Id,
                 Side = x.Side

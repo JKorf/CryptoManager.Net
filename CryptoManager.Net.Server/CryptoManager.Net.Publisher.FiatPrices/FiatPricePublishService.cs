@@ -21,7 +21,6 @@ namespace CryptoManager.Net.Publisher.FiatPrices
         public FiatPricePublishService(
             ILogger<FiatPricePublishService> logger,
             IConfiguration configuration,
-            IExchangeRestClient restClient,
             IPublishOutput<FiatPrice> publishOutput,
             HttpClient httpClient)
         {

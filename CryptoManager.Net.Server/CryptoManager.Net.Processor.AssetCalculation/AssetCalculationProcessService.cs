@@ -47,13 +47,14 @@ namespace CryptoManager.Net.Processor.Tickers
         {
             var sw = Stopwatch.StartNew();
             var context = _dbContextFactory.CreateDbContext();
+            var cutoffTime = DateTime.UtcNow.AddMinutes(-1);
 
             try
             {
                 var ids = update.Data.Select(x => $"{x.Exchange}-{x.Asset}").ToList();
                 var symbolData = await context.Symbols
                                 .Where(x => ids.Contains(x.BaseAssetExchangeId))
-                                .Where(x => x.DeleteTime == null)
+                                .Where(x => x.DeleteTime == null && x.UpdateTime >= cutoffTime)
                                 .Select(x => new { x.Exchange, x.BaseAsset, x.BaseAssetType, x.BaseAssetSubType, x.QuoteAsset, x.QuoteAssetType, x.QuoteAssetSubType, x.ChangePercentage, x.Volume, x.LastPrice, x.TickerType })
                                 .GroupBy(x => new { x.Exchange, x.BaseAsset })
                                 .ToListAsync();

@@ -30,6 +30,7 @@ namespace CryptoManager.Net.Analyzers
 
         private async Task ProcessAsync(CancellationToken ct)
         {
+            var cutoffTime = DateTime.UtcNow.AddMinutes(-1);
             try
             {
                 var context = _contextFactory.CreateDbContext();
@@ -38,13 +39,13 @@ namespace CryptoManager.Net.Analyzers
                 var fiatPrices = await context.FiatPrices.ToListAsync();
 
                 // Get all symbols we need to process
-                var allSymbolVolumes = await context.Symbols.Select(x => new { x.Id, x.Exchange, x.QuoteAsset, x.QuoteVolume }).ToListAsync();
+                var allSymbolVolumes = await context.Symbols.Where(x => x.UpdateTime >= cutoffTime).Select(x => new { x.Id, x.Exchange, x.QuoteAsset, x.QuoteVolume }).ToListAsync();
 
                 // Get all exchange quote asset  prices
                 var quoteSymbols = allSymbolVolumes.GroupBy(x => new { x.Exchange, x.QuoteAsset }).Select(x => $"{x.Key.Exchange}-{x.Key.QuoteAsset}").ToList();
 
                 // Get all quote asset exchanges prices we need
-                var quoteSymbolPrices = await context.ExchangeAssets.Where(x => quoteSymbols.Contains(x.Id)).Select(x => new { x.Id, x.Value }).ToListAsync();
+                var quoteSymbolPrices = await context.ExchangeAssets.Where(x => quoteSymbols.Contains(x.Id) && x.UpdateTime >= cutoffTime).Select(x => new { x.Id, x.Value }).ToListAsync();
 
                 var data = new List<ExchangeSymbol>(allSymbolVolumes.Count);
                 foreach (var symbol in allSymbolVolumes)

@@ -1,5 +1,6 @@
 using CryptoClients.Net.Interfaces;
 using CryptoExchange.Net.Objects.Errors;
+using CryptoExchange.Net.SharedApis;
 using CryptoManager.Net.Caching;
 using CryptoManager.Net.Database;
 using CryptoManager.Net.Database.Models;
@@ -18,12 +19,12 @@ namespace CryptoManager.Net.Controllers;
 public class SymbolsController : ApiController
 {
     private readonly ILogger _logger;
-    private readonly IExchangeRestClient _restClient;
+    private readonly IExchangeSharedApiClient _client;
 
-    public SymbolsController(ILogger<SymbolsController> logger, TrackerContext dbContext, IExchangeRestClient restClient) : base(dbContext)
+    public SymbolsController(ILogger<SymbolsController> logger, TrackerContext dbContext, IExchangeSharedApiClient client) : base(dbContext)
     {
         _logger = logger;
-        _restClient = restClient;
+        _client = client;
     }
 
     [HttpGet]
@@ -98,7 +99,7 @@ public class SymbolsController : ApiController
             return ApiResult<ApiSymbolDetails>.Error(ErrorType.UnknownSymbol, null, "Symbol not found");
         }
 
-        var client = _restClient.GetSpotOrderClient(symbol.Exchange);
+        var client = _client.GetCapability<IPlaceSpotOrderRest>(symbol.Exchange)?.Capability;
         return ApiResult<ApiSymbolDetails>.Ok(new ApiSymbolDetails
         {
             Id = symbol.Id,
@@ -120,7 +121,7 @@ public class SymbolsController : ApiController
             QuantityDecimals = symbol.QuantityDecimals,
             QuantityStep = symbol.QuantityStep,
 
-            SupportPlacement = client?.PlaceSpotOrderOptions.Supported == true,
+            SupportPlacement = client != null,
             FeeAssetType = client?.SpotFeeAssetType,
             FeeDeductionType = client?.SpotFeeDeductionType,
             SupportedTimeInForces = client?.SpotSupportedTimeInForce,

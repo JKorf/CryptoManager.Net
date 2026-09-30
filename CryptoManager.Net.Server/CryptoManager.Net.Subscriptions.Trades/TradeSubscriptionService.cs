@@ -11,7 +11,7 @@ namespace CryptoManager.Net.Subscriptions.Trades
     public class TradeSubscriptionService
     {
         private readonly ILogger _logger;
-        private readonly IExchangeSocketClient _socketClient;
+        private readonly IExchangeSharedApiClient _client;
 
         private readonly ConcurrentDictionary<string, SemaphoreSlim> _symbolSemaphores = new ConcurrentDictionary<string, SemaphoreSlim>();
 
@@ -25,10 +25,10 @@ namespace CryptoManager.Net.Subscriptions.Trades
 
         public TradeSubscriptionService(
             ILogger<TradeSubscriptionService> logger,
-            IExchangeSocketClient socketClient)
+            IExchangeSharedApiClient client)
         {
             _logger = logger;
-            _socketClient = socketClient;
+            _client = client;
         }
 
         public async Task<CallResult> SubscribeAsync(
@@ -39,7 +39,7 @@ namespace CryptoManager.Net.Subscriptions.Trades
             CancellationToken ct)
         {
             var symbolData = symbolId.Split("-");
-            var client = _socketClient.GetTradeClient(TradingMode.Spot, symbolData[0]);
+            var client = _client.GetCapability<ISubscribeTradesSocket>(symbolData[0], TradingMode.Spot);
             if (client == null)
                 return CallResult.Fail(ArgumentError.Invalid(symbolId, $"No Trade subscription client available for {symbolData[0]}"));
 
@@ -70,7 +70,7 @@ namespace CryptoManager.Net.Subscriptions.Trades
                 }
 
                 _logger.LogInformation("Subscribing to Trade updates for {Symbol}", symbolId);
-                var subscription = await client.SubscribeToTradeUpdatesAsync(new SubscribeTradeRequest(new SharedSymbol(TradingMode.Spot, symbolData[1], symbolData[2])), update => ProcessUpdate(symbolId, update));
+                var subscription = await client.Capability.SubscribeToTradeUpdatesAsync(new SubscribeTradeRequest(new SharedSymbol(TradingMode.Spot, symbolData[1], symbolData[2])), update => ProcessUpdate(symbolId, update));
                 if (!subscription.Success)
                 {
                     _logger.LogWarning("Failed to subscribe Trade for {Symbol}: {Error}", symbolId, subscription.Error!.ToString());
