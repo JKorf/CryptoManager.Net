@@ -69,7 +69,7 @@ namespace CryptoManager.Net.Processor.Tickers
                     if (symbol.LowPrice.HasValue && symbol.HighPrice.HasValue)
                         // Take average of high/low price as avg price
                         symbol.QuoteVolume = (symbol.LowPrice.Value + symbol.HighPrice.Value) / 2 * symbol.Volume;
-                    if (symbol.ChangePercentage.HasValue)
+                    else if (symbol.ChangePercentage.HasValue)
                         // Take half of change percentage as avg price
                         symbol.QuoteVolume = (symbol.LastPrice * Math.Abs((symbol.ChangePercentage.Value / 200) - 1)) * symbol.Volume;
                     else
